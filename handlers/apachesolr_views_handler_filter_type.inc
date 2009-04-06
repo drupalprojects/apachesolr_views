@@ -33,7 +33,7 @@ class apachesolr_views_handler_filter_type extends views_handler_filter_in_opera
   public function query() {
     if (empty($this->value)) {
       // Add term that will yield no results
-      $this->query->add_facet('nid', '-1');
+      $this->query->add_filter('nid', '-1');
     }
     else {
       foreach ($this->value as $type) {
@@ -41,13 +41,13 @@ class apachesolr_views_handler_filter_type extends views_handler_filter_in_opera
       }
       /**
        * This works, but breaks the facet blocks
-       * $this->query->add_facet($this->real_field, substr($filter, 3));
+       * $this->query->add_filter($this->real_field, substr($filter, 3));
        */
       
       $this->get_value_options();
       foreach ($this->value_options as $type => $name) {
         if (!in_array($type, $this->value)) {
-          $this->query->add_facet($this->real_field, $type, TRUE);
+          $this->query->add_filter($this->real_field, $type, TRUE);
         }
       }
     }

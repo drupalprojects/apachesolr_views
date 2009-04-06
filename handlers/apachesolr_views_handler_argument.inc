@@ -18,7 +18,7 @@ class apachesolr_views_handler_argument extends views_handler_argument {
       $this->value = array($this->argument);
     }
     foreach ($this->value as $facet_value) {
-      $this->query->add_facet($this->real_field, apachesolr_views_query::escape_term($facet_value));
+      $this->query->add_filter($this->real_field, apachesolr_views_query::escape_term($facet_value));
     }
   }
   

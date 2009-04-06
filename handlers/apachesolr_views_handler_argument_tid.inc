@@ -21,6 +21,6 @@ class apachesolr_views_handler_argument_tid extends views_handler_argument_numer
    */
   public function query() {
     // TODO: handle multiple tids
-    $this->query->add_facet($this->real_field, apachesolr_views_query::escape_term($this->argument));
+    $this->query->add_filter($this->real_field, apachesolr_views_query::escape_term($this->argument));
   }
 }

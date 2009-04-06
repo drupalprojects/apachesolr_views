@@ -10,6 +10,16 @@
  */
 class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Query_Interface {
   
+  /**
+   * Static shared by all instances, used to increment ID numbers.
+   */
+  protected static $idCount = 0;
+
+  /**
+   * Each query/subquery will have a unique ID
+   */
+  public $id;
+  
   // facets for the solr query
   private $_facets = array();
   
@@ -48,6 +58,9 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   // $view object isn't always avaible
   protected $_base_path = '';
   
+  // used to store subqueries. Useful in say the node_access implementation
+  protected $_subqueries = array();
+  
   
   /*
    * Functions required by the views query class interface
@@ -58,6 +71,14 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    */
   public function init($base_table, $base_field) {
     $this->_solr_service = apachesolr_get_solr();
+    $this->id = ++self::$idCount;
+  }
+  
+  /**
+   * copy constructor... what else to do?
+   */
+  public function __clone() {
+    $this->id = ++self::$idCount;
   }
   
   /**
@@ -98,18 +119,24 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     }
     
     // Add in facets now
-    $this->_params['fq'] = array();
-    foreach ($this->_facets as $type => $facets) {
-      $filter_string = '';
-      foreach ($facets as $definition) {
-        if ($definition['exclude']) {
-          $type_string = "NOT $type";
-        }
-        else {
-          $type_string = $type;
-        }
-        $this->_params['fq'][] = "$type_string:" . $definition['value'];
+    $this->_params['fq'] = $this->rebuild_fq();
+    
+    
+    // process subqueries
+    foreach ($this->_subqueries as $query_data) {
+      // process the query string first
+      $sub_query_string = $query_data['query']->get_query_basic();
+      if ($sub_query_string) {
+        $this->_query .= " {$query_data['q_op']} ({$sub_query_string})";
       }
+      
+      // now handle the filter query
+      $subfq = $query_data['query']->get_fq();
+      if (!empty($subfq)) {
+        $operator = $query_data['fq_op'];
+        $this->_params['fq'][] = "(" . implode(" {$operator} ", $subfq) .")";
+      }
+      
     }
     
     // add in the fields. These fields include the necessary fields.
@@ -177,8 +204,8 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    */
   public function alter(&$view) {
     foreach (module_implements('apachesolr_modify_query') as $module) {
-      $function = $module . '_apachesolr__modify_query';
-      // TODO: make this work
+      $function = $module . '_apachesolr_modify_query';
+      $function($this, $this->_params);
     }
   }
   
@@ -321,7 +348,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    *
    * @return none
    */
-  public function add_facet($type, $value, $exclude = FALSE) {
+  public function add_filter($type, $value, $exclude = FALSE) {
     $this->_facets[$type][] = array(
       'value' => $value,
       'exclude' => $exclude,
@@ -356,7 +383,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * @param string $value
    * The facet value to check against
    */
-  function has_facet($field, $value) {
+  function has_filter($field, $value) {
     if (isset($this->_facets[$field])) {
       foreach ($this->_facets[$field] as $definition) {
         if ($definition['value'] == $value) {
@@ -378,7 +405,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * The facet value to remove
    * This value can be NULL
    */
-  function remove_facet($field, $value = NULL) {
+  function remove_filter($field, $value = NULL) {
     if (!empty($value)) {
       if (isset($this->_facets[$field])) {
         $removal_key = FALSE;
@@ -468,11 +495,47 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     return !empty($query_string) ? substr($query_string, 1) : NULL;
   }
   
-  /*
-   * (Public and private) helper functions
+  /**
+   * set the solrsort
+   *
+   * @param string raw string to set the sort to
    */
+  function set_solrsort($sortstring) {
+    
+  }
   
-  /** Escapes a term for passing it to the query. */
+  /**
+   * return an array of filters
+   *
+   * Compabatiablity layer with Solr_Base_Query
+   */
+  function get_filters() {
+    $filters = array();
+    foreach ($this->_facets() as $type => $fields) {
+      foreach ($fields as $data) {
+        $filters['#name'] = ($data['exclude']) ? "NOT $type" : $type;
+        $filters['#value'] = $data['value'];
+      }
+    }
+  }
+  
+  function get_fq() {
+    return $this->rebuild_fq();
+  }
+  
+  /**
+   * add a subquery to the current query
+   */
+  function add_subquery(Drupal_Solr_Query_Interface $query, $fq_operator = 'OR', $q_operator = 'AND') {
+    $this->_subqueries[$query->id] = array(
+      'query' => $query,
+      'fq_op' => $fq_operator,
+      'q_op' => $q_operator,
+    );
+  }
+  /**
+   * Escapes a term for passing it to the query.
+   */
   public static function escape_term($term) {
     $term = trim($term);
     if (empty($term)) {
@@ -487,5 +550,23 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       return Drupal_Apache_Solr_Service::phrase($term);
     }
     return Drupal_Apache_Solr_Service::escape($term);
+  }
+  
+  protected function rebuild_fq() {
+    $query_filters = array();
+    foreach ($this->_facets as $type => $facets) {
+      $filter_string = '';
+      foreach ($facets as $definition) {
+        if ($definition['exclude']) {
+          $type_string = "NOT $type";
+        }
+        else {
+          $type_string = $type;
+        }
+        $query_filters[] = "$type_string:" . $definition['value'];
+      }
+    }
+    
+    return $query_filters;
   }
 }
