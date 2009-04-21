@@ -9,7 +9,7 @@
 /**
  * Implementation of hook_views_handlers().
  */
-function apachesolr_views_handlers() {
+function apachesolr_views_views_handlers() {
   return array(
     'info' => array(
       'path' => drupal_get_path('module', 'apachesolr_views') . '/handlers',
@@ -43,7 +43,7 @@ function apachesolr_views_handlers() {
         'parent' => 'views_handler_field',
       ),
       'apachesolr_views_handler_filter_author' => array(
-        'parent' => 'views_handler_filter',
+        'parent' => 'views_handler_filter_user_name',
       ),
       'apachesolr_views_handler_filter_search' => array(
         'parent' => 'views_handler_filter_search',
@@ -61,7 +61,7 @@ function apachesolr_views_handlers() {
 /**
  * Implementation of hook_views_plugins().
  */
-function apachesolr_views_plugins() {
+function apachesolr_views_views_plugins() {
   return array(
     'module' => 'apachesolr_views',
     'query' => array(

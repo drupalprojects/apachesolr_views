@@ -21,16 +21,16 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   public $id;
   
   // facets for the solr query
-  private $_facets = array();
+  protected $_facets = array();
   
   // String containing the query that will be handed to Solr.
-  private $_query;
+  protected $_query;
   
   // Object encapsulating the actual query to Solr.
-  private $_solr_service;
+  protected $_solr_service;
   
   // Array containing the parameters that will be handed to Solr.
-  private $_params = array(
+  protected $_params = array(
     'fl' => 'id,nid,title,comment_count,type,created,changed,url,uid,name',
     'facet' => 'true',
     'facet.mincount' => 1,
@@ -39,12 +39,15 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   );
   
   // array all of the fields for the query
-  private $_used_fields = array(
+  protected $_used_fields = array(
     'id',
     'nid',
     'url',
     'uid', // TODO: skip this probably, but not for user searching...
   );
+  
+  // the template to use on the solr
+  protected $_query_template = '';
   
   // the view object. used for the get_path() method
   // @see get_path()
@@ -60,6 +63,10 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   
   // used to store subqueries. Useful in say the node_access implementation
   protected $_subqueries = array();
+  
+  // array to store extra url query params. Used for instance to store
+  // latitudes and longitudes
+  protected $_extra_query = array();
   
   
   /*
@@ -197,6 +204,11 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         }
       }
     }
+    
+    // query template handling
+    if (!empty($this->_query_template)) {
+      $this->_params['qt'] = $this->_query_template;
+    }
   }
   
   /**
@@ -332,6 +344,21 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    */
   function get_param($param_name) {
     return $this->_params[$param_name];
+  }
+  
+  /**
+   * set the search param. useful for extensions like localsolr
+   *
+   * @param string $param_name
+   * name of the parameter
+   *
+   * @param string $param_value
+   * value of the parameter
+   *
+   * @return none;
+   */
+  function set_param($param_name, $param_value) {
+    $this->_params[$param_name] = $param_value;
   }
   
   /**
@@ -489,19 +516,27 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         else if ($this->_facets[$filter->field]) {
           $query_string .= '&' . $filter->options['expose']['identifier'] . '=' . $this->_facets[$filter->field];
         }
+        else {
+          $query_string .= '&' . $filter->options['expose']['identifier'] . '=' . $_GET[$filter->options['expose']['identifier']];
+        }
       }
+    }
+    
+    foreach ($this->_extra_query as $field => $value) {
+      $query_string .= "&$field=$value";
     }
     
     return !empty($query_string) ? substr($query_string, 1) : NULL;
   }
   
   /**
-   * set the solrsort
+   * set the solrsort. This currently doesn't work
    *
    * @param string raw string to set the sort to
    */
   function set_solrsort($sortstring) {
-    
+    list($type, $direction) = explode(" ", $sortstring);
+    $this->add_sort($type, $direction);
   }
   
   /**
@@ -511,12 +546,14 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    */
   function get_filters() {
     $filters = array();
-    foreach ($this->_facets() as $type => $fields) {
+    foreach ($this->_facets as $type => $fields) {
       foreach ($fields as $data) {
         $filters['#name'] = ($data['exclude']) ? "NOT $type" : $type;
         $filters['#value'] = $data['value'];
       }
     }
+    
+    return $filters;
   }
   
   function get_fq() {
@@ -552,6 +589,34 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     return Drupal_Apache_Solr_Service::escape($term);
   }
   
+  /**
+   * allows the user to change the query template
+   * @see localsolr
+   *
+   * @param string $qt
+   * the query template name to use
+   */
+  public function change_query_template($qt) {
+    $this->_query_template = $qt;
+  }
+  
+  /**
+   * add a field and value to the query string
+   * This is useful for generating links with the facet blocks
+   *
+   * @param string $field
+   * the query field
+   *
+   * @param string $value
+   * the value of hte query field
+   */
+  function add_url_query_param($field, $value) {
+    $this->_extra_query[$field] = $value;
+  }
+  
+  /**
+   * build up the filter query params that are passed to Solr
+   */
   protected function rebuild_fq() {
     $query_filters = array();
     foreach ($this->_facets as $type => $facets) {
