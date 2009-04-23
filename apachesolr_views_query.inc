@@ -446,6 +446,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * This value can be NULL
    */
   function remove_filter($field, $value = NULL) {
+    drupal_set_message('removing ' . $field . ' ' . $value);
     if (!empty($value)) {
       if (isset($this->_facets[$field])) {
         $removal_key = FALSE;
@@ -564,8 +565,10 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $filters = array();
     foreach ($this->_facets as $type => $fields) {
       foreach ($fields as $data) {
-        $filters['#name'] = ($data['exclude']) ? "NOT $type" : $type;
-        $filters['#value'] = $data['value'];
+        $filters[] = array(
+          '#name' => ($data['exclude']) ? "NOT $type" : $type, 
+          '#value' => $data['value']
+        );
       }
     }
     
@@ -573,7 +576,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     // remove all those that don't match and return the array
     if (!empty($name)) {
       foreach ($filters as $key => $filter) {
-        if ($filters['#name'] != $name) {
+        if ($filter['#name'] != $name) {
           unset($filters[$key]);
         }
       }
