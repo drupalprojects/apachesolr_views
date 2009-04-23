@@ -276,9 +276,6 @@ function apachesolr_views_views_data() {
   $data['apachesolr']['text'] = array(
     'title' => t('Search'),
     'help' => t('Searches the content with Solr'),
-    'argument' => array(
-      'handler' => 'apachesolr_views_handler_argument',
-    ),
     'filter' => array(
       'handler' => 'apachesolr_views_handler_filter_search',
     ),
