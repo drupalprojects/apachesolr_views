@@ -68,17 +68,30 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   // latitudes and longitudes
   protected $_extra_query = array();
   
-  
-  /*
-   * Functions required by the views query class interface
-   */
+  // array to store the sorts for get_available_sorts() call
+  protected $_available_sorts = array();
   
   /**
-   * Constructor. Grab the PHP solr client wrapper
+   * Views init() function
    */
   public function init($base_table, $base_field) {
     $this->_solr_service = apachesolr_get_solr();
     $this->id = ++self::$idCount;
+  }
+  
+  /**
+   * Constructor build up the avialable sorts
+   */
+  public function __construct() {
+    $data = _views_fetch_data('apachesolr');
+    foreach ($data as $field_name => $field) {
+      if (!empty($field['sort'])) {
+        $this->_available_sorts[$field_name] = array(
+          'name' => $field['title'],
+          'default' => 'asc', // TODO: make this part of the handler def? So it will be in the Views data defintion
+        );
+      }
+    }
   }
   
   /**
@@ -217,7 +230,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   public function alter(&$view) {
     foreach (module_implements('apachesolr_modify_query') as $module) {
       $function = $module . '_apachesolr_modify_query';
-      $function($this, $this->_params);
+      $function($this, $this->_params, 'apachesolr_views');
     }
   }
   
@@ -542,14 +555,27 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   /**
    * return an array of filters
    *
+   * @param string $name
+   * the name of the filter applied to the query
+   * 
    * Compabatiablity layer with Solr_Base_Query
    */
-  function get_filters() {
+  function get_filters( $name = NULL) {
     $filters = array();
     foreach ($this->_facets as $type => $fields) {
       foreach ($fields as $data) {
         $filters['#name'] = ($data['exclude']) ? "NOT $type" : $type;
         $filters['#value'] = $data['value'];
+      }
+    }
+    
+    // if we are looking for a specific one
+    // remove all those that don't match and return the array
+    if (!empty($name)) {
+      foreach ($filters as $key => $filter) {
+        if ($filters['#name'] != $name) {
+          unset($filters[$key]);
+        }
       }
     }
     
@@ -612,6 +638,34 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    */
   function add_url_query_param($field, $value) {
     $this->_extra_query[$field] = $value;
+  }
+  
+  public function get_available_sorts() {
+    return $this->_available_sorts;
+  }
+  
+  /**
+   * Remove a specific subquery
+   *
+   * @param Drupal_Solr_Query_Interface $query
+   * the query to remove
+   */
+  function remove_subquery(Drupal_Solr_Query_Interface $query) {
+    unset($this->_subqueries[$query->id]);
+  }
+  
+  /**
+   * remove all subqueries
+   */
+  function remove_subqueries() {
+    $this->_subqueries = array();    
+  }
+  
+  /**
+   * make a sort available
+   */
+  function set_available_sort($field, $sort) {
+    // TODO: hmm.. wierd... we pull in all the sorts from Views data fields
   }
   
   /**
