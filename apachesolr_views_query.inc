@@ -329,7 +329,9 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     if (empty($field) || !is_string($field)) {
       return FALSE;
     }
-    $this->_used_fields[] = $field;
+    if (!in_array($field, $this->_used_fields)) {
+      $this->_used_fields[] = $field;
+    }
     return $field;
   }
   
@@ -446,7 +448,6 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * This value can be NULL
    */
   function remove_filter($field, $value = NULL) {
-    drupal_set_message('removing ' . $field . ' ' . $value);
     if (!empty($value)) {
       if (isset($this->_facets[$field])) {
         $removal_key = FALSE;
