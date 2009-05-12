@@ -1,7 +1,8 @@
 ; $Id$
 name = Apache Solr Views Integration
 description = Provides Views Integration with Views
-dependencies [] = apachesolr, views
+dependencies[] = apachesolr
+dependencies[] = views
 package = Apache Solr
 core = "6.x"
 php = 5.1.4

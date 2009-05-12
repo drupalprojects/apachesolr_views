@@ -71,6 +71,12 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   // array to store the sorts for get_available_sorts() call
   protected $_available_sorts = array();
   
+  // string to identify the current Views display
+  protected $_current_display = '';
+  
+  // string to identify the current Views name
+  protected $_current_views_name = '';
+  
   /**
    * Views init() function
    */
@@ -230,7 +236,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   public function alter(&$view) {
     foreach (module_implements('apachesolr_modify_query') as $module) {
       $function = $module . '_apachesolr_modify_query';
-      $function($this, $this->_params, 'apachesolr_views');
+      $function($this, $this->_params, 'apachesolr_views_query');
     }
   }
   
@@ -247,6 +253,8 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $this->_view_arguments = $view->argument;
     $this->_view_filters = $view->filter;
     $this->_base_path = $view->display[$view->current_display]->display_options['path'];
+    $this->_current_display = $view->current_display;
+    $this->_current_views_name = $view->name;
     
     try {
       // TODO: handle multiple pages seperated by commas. @see views_plugin_query_default.inc
@@ -588,6 +596,20 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   
   function get_fq() {
     return $this->rebuild_fq();
+  }
+  
+  /**
+   * return the Views display id
+   */
+  function get_display_id() {
+    return $this->_current_display;
+  }
+  
+  /**
+   * return the Views name
+   */
+  function get_views_name() {
+    return $this->_current_views_name;
   }
   
   /**

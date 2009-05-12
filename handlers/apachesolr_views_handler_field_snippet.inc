@@ -8,7 +8,8 @@
  */
 class apachesolr_views_handler_field_snippet extends views_handler_field {
   function query() {
-    // do nothing here....
+    // Wierd that with ht.alternateField we can't have the snippet be the body...
+    $this->query->add_field('body');
   }
   
   function render($doc) {
@@ -17,7 +18,7 @@ class apachesolr_views_handler_field_snippet extends views_handler_field {
     if (is_null($hl_fl)) {
       $hl_fl = 'body';
     }
-    $snippet = isset($response->highlighting->{$doc->id}->$hl_fl) ? theme('apachesolr_search_snippets', $doc, $response->highlighting->{$doc->id}->$hl_fl) : '';
+    $snippet = isset($response->highlighting->{$doc->id}->$hl_fl) ? theme('apachesolr_search_snippets', $doc, $response->highlighting->{$doc->id}->$hl_fl) : $doc->body;
     
     return $snippet;
   }

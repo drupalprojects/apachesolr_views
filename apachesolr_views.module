@@ -13,3 +13,19 @@
 function apachesolr_views_views_api() {
   return array('api' => '2.0');
 }
+
+/**
+ * Implementation of hook_theme().
+ */
+function apachesolr_views_theme() {
+  return array(
+    'apachesolr_views_term_titles' => array('term_names' => array()),
+  );
+}
+
+/**
+ * theme function for the term titles
+ */
+function theme_apachesolr_views_term_titles($term_names) {
+  return "<span>" . implode('</span> + <span>', $term_names) . "</span>";
+}

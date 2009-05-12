@@ -1,5 +1,4 @@
 <?php
-
 // $Id$
 
 /*
@@ -17,6 +16,9 @@ function apachesolr_views_views_handlers() {
     'handlers' => array(
       'apachesolr_views_handler_argument' => array(
         'parent' => 'views_handler_argument',
+      ),
+      'apachesolr_views_handler_argument_tid' => array(
+        'parent' => 'apachesolr_views_handler_argument',
       ),
       'apachesolr_views_handler_field' => array(
         'parent' => 'views_handler_field_node',
@@ -41,6 +43,9 @@ function apachesolr_views_views_handlers() {
       ),
       'apachesolr_views_handler_field_snippet' => array(
         'parent' => 'views_handler_field',
+      ),
+      'apachesolr_views_handler_optionwidget_filter' => array(
+        'parent' => 'views_handler_filter',
       ),
       'apachesolr_views_handler_filter_author' => array(
         'parent' => 'views_handler_filter_user_name',
@@ -86,6 +91,7 @@ function apachesolr_views_views_data() {
     'query class' => 'apachesolr_views_query',
     'title' => t('Apache Solr'),
     'help' => t('Searches the site with the Apache Solr search engine.'),
+    'field' => 'nid',
   );
 
   $data['apachesolr']['nid'] = array(
@@ -248,7 +254,7 @@ function apachesolr_views_views_data() {
       'title' => t('Taxonomy terms'),
       'help' => t('Taxonomy terms associated with the node.'),
       'argument' => array(
-        'handler' => 'apachesolr_views_handler_argument',
+        'handler' => 'apachesolr_views_handler_argument_tid',
       ),
     );
   }
@@ -293,6 +299,24 @@ function apachesolr_views_views_data() {
     ),
   );
   
+  // comment_count field useful for sorting
+  $data['apachesolr']['comment_count'] = array(
+    'title' => t('Comment Count'),
+    'help' => t('The number of comments on a node'),
+    'sort' => array(
+      'handler' => 'apachesolr_views_handler_sort',
+    ),
+    'field' => array(
+      'handler' => 'apachesolr_views_handler_field_generic',
+      'click sortable' => FALSE,
+      'element type' => 'div',
+      'apachesolr base handler' => array(
+        'table' => 'node_comment_statistics',
+        'field' => 'comment_count',
+      ),
+    )
+  );
+  
   // snippet field
   $data['apachesolr']['snippet'] = array(
     'title' => t('Search Snippet'),
@@ -301,6 +325,22 @@ function apachesolr_views_views_data() {
       'handler' => 'apachesolr_views_handler_field_snippet',
     ),
   );
+  
+  // provide CCK mappings filters
+  foreach (apachesolr_cck_fields() as $name => $field) {
+    // TODO: can we make use of CCK's mapping already and just override
+    // the query part???
+    if ($field['widget_type'] == 'optionwidgets_select') {
+      $data['apachesolr'][apachesolr_index_key($field)] = array(
+        'title' => t($field['label']),
+        'help' => t('CCK Mapping for field @fieldname', array('@fieldname' => $field['field_name'])),
+        'filter' => array(
+          'handler' => 'apachesolr_views_handler_optionwidget_filter',
+          'cck_field' => $field,
+        ),
+      );
+    }
+  }
   
   return $data;
 }
