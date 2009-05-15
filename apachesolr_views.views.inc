@@ -17,6 +17,9 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_argument' => array(
         'parent' => 'views_handler_argument',
       ),
+      'apachesolr_views_handler_argument_mlt' => array(
+        'parent' => 'views_handler_argument_node_nid',
+      ),
       'apachesolr_views_handler_argument_tid' => array(
         'parent' => 'apachesolr_views_handler_argument',
       ),
@@ -323,6 +326,13 @@ function apachesolr_views_views_data() {
     'help' => t('The return snippet that matches the query sent to Solr.'),
     'field' => array(
       'handler' => 'apachesolr_views_handler_field_snippet',
+    ),
+  );
+  $data['apachesolr']['mlt'] = array(
+    'title' => t('More Like This Node id'),
+    'help' => t('Do a more like this query based on the provided nid'),
+    'argument' => array(
+      'handler' => 'apachesolr_views_handler_argument_mlt',
     ),
   );
   
