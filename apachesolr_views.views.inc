@@ -340,10 +340,10 @@ function apachesolr_views_views_data() {
   foreach (apachesolr_cck_fields() as $name => $field) {
     // TODO: can we make use of CCK's mapping already and just override
     // the query part???
-    if ($field['widget_type'] == 'optionwidgets_select') {
-      $data['apachesolr'][apachesolr_index_key($field)] = array(
+    $options = content_allowed_values(content_fields($this->definition['cck_field']['field_name']));
+    if (!empty($options)) {      $data['apachesolr'][apachesolr_index_key($field)] = array(
         'title' => t($field['label']),
-        'help' => t('CCK Mapping for field @fieldname', array('@fieldname' => $field['field_name'])),
+        'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
         'filter' => array(
           'handler' => 'apachesolr_views_handler_optionwidget_filter',
           'cck_field' => $field,
