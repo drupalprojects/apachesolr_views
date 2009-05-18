@@ -341,7 +341,8 @@ function apachesolr_views_views_data() {
     // TODO: can we make use of CCK's mapping already and just override
     // the query part???
     $options = content_allowed_values(content_fields($this->definition['cck_field']['field_name']));
-    if (!empty($options)) {      $data['apachesolr'][apachesolr_index_key($field)] = array(
+    if (!empty($options)) {
+      $data['apachesolr'][apachesolr_index_key($field)] = array(
         'title' => t($field['label']),
         'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
         'filter' => array(
