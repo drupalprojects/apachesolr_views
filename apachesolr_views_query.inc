@@ -30,13 +30,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   protected $_solr_service;
   
   // Array containing the parameters that will be handed to Solr.
-  protected $_params = array(
-    'fl' => 'id,nid,title,comment_count,type,created,changed,url,uid,name',
-    'facet' => 'true',
-    'facet.mincount' => 1,
-    'facet.sort' => 'true',
-    'hl' => 'false',
-  );
+  protected $_params = array();
   
   // array all of the fields for the query
   protected $_used_fields = array(
@@ -110,39 +104,14 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   /**
    * Build the query object. Load up all avaivable facets so the blocks work.
    */
-  public function build() {
-    /**
-     * Highlighting settings
-     * These settings are set in solrconfig.xml.
-     * See the defaults there.
-     * If you wish to override them, you can via settings.php
-     */
-    $this->_params['hl'] = variable_get('apachesolr_hl_active', NULL);
-    $this->_params['hl.fragsize']= variable_get('apachesolr_hl_textsnippetlength', NULL);
-    $this->_params['hl.simple.pre'] = variable_get('apachesolr_hl_pretag', NULL);
-    $this->_params['hl.simple.post'] = variable_get('apachesolr_hl_posttag', NULL);
-    $this->_params['hl.snippets'] = variable_get('apachesolr_hl_numsnippets', NULL);
-    $this->_params['hl.fl'] = variable_get('apachesolr_hl_fieldtohightlight', NULL);
-    // We default to getting snippets from the body.
-    $hl_fl = is_null($this->_params['hl.fl']) ? 'body' : $this->_params['hl.fl'];
+  public function build() {    
     
-    $facet_query_limits = variable_get('apachesolr_facet_query_limits', array());
-    // Request all enabled facets. And go fetch them
-    // this is used so the blocks work..
-    // TODO: with this views patch, the blocks arn't working currently
-    foreach (apachesolr_get_enabled_facets() as $module => $module_facets) {
-      foreach($module_facets as $delta => $facet_field) {
-        $this->_params['facet.field'][] = $facet_field;
-        // Facet limits
-        if (isset($facet_query_limits[$module][$delta])) {
-          $this->_params['f.' . $facet_field . '.facet.limit'] = $facet_query_limits[$module][$delta];
-        }
-      }
-    }
-    if (!empty($this->_params['facet.field'])) {
-      // Add a default limit for fields where no limit was set.
-      $this->_params['facet.limit'] = variable_get('apachesolr_facet_query_limit_default', 20);
-    }
+    // TODO: add in config screen on teh View instead of using apachesolr settings
+    // NOTICE: we override the fl further down in this process. And the rows param
+    // does not take affect here as we set the rows in the execute() method
+    $this->_params += apachesolr_search_basic_params($this);
+    apachesolr_search_add_facet_params($this->_params, $this);
+    apachesolr_search_add_boost_params($this->_params, $this, $this->_solr_service);
     
     // Add in facets now
     $this->_params['fq'] = $this->rebuild_fq();
@@ -168,10 +137,6 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     // add in the fields. These fields include the necessary fields.
     $this->_params['fl'] = implode(',', $this->_used_fields);
     
-    /**
-     * TODO: use the query field settings from the interface
-     */
-    
     // get the total docs
     $data = $this->_solr_service->getLuke();
     if (isset($data->index->numDocs)) {
@@ -179,49 +144,6 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     }
     else {
       $total = db_result(db_query("SELECT COUNT(nid) FROM {node}"));
-    }
-    
-    // For the boost functions for the created timestamp, etc we use the
-    // standard date-biasing function, as suggested (but steeper) at
-    // http://wiki.apache.org/solr/DisMaxRequestHandler
-    // rord() returns 1 for the newset doc, and the number in the index for
-    // the oldest doc.  The function is thus: $total/(rord()*$steepness + $total).
-    $date_settings = variable_get('apachesolr_search_date_boost', '4:200.0');
-    list($date_steepness, $date_boost) = explode(':', $date_settings);
-    if ($date_boost) {
-      $this->_params['bf'][] = "recip(rord(created),$date_steepness,$total,$total)^$date_boost";
-    }
-    // Boost on comment count.
-    $comment_settings = variable_get('apachesolr_search_comment_boost', '0:0');
-    list($comment_steepness, $comment_boost) = explode(':', $comment_settings);
-    if ($comment_boost) {
-      $this->_params['bf'][] = "recip(rord(comment_count),$comment_steepness,$total,$total)^$comment_boost";
-    }
-    // Boost for a more recent comment or node edit.
-    $changed_settings = variable_get('apachesolr_search_changed_boost', '0:0');
-    list($changed_steepness, $changed_boost) = explode(':', $changed_settings);
-    if ($changed_boost) {
-      $this->_params['bf'][] = "recip(rord(last_comment_or_change),$changed_steepness,$total,$total)^$changed_boost";
-    }
-    // Boost for nodes with sticky bit set.
-    $sticky_boost = variable_get('apachesolr_search_sticky_boost', 0);
-    if ($sticky_boost) {
-      $this->_params['bq'][] = "sticky:true^$sticky_boost";
-    }
-    // Boost for nodes with promoted bit set.
-    $promote_boost = variable_get('apachesolr_search_promote_boost', 0);
-    if ($promote_boost) {
-      $this->_params['bq'][] = "promote:true^$promote_boost";
-    }
-    // Modify the weight of results according to the node types.
-    $type_boosts = variable_get('apachesolr_search_type_boosts', array());
-    if (!empty($type_boosts)) {
-      foreach ($type_boosts as $type => $boost) {
-        // Only add a param if the boost is != 0 (i.e. > "Normal").
-        if ($boost) {
-          $this->_params['bq'][] = "type:$type^$boost";
-        }
-      }
     }
     
     // query template handling
@@ -255,7 +177,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $this->_base_path = $view->display[$view->current_display]->display_options['path'];
     $this->_current_display = $view->current_display;
     $this->_current_views_name = $view->name;
-    
+
     try {
       // TODO: handle multiple pages seperated by commas. @see views_plugin_query_default.inc
       $page = isset($_GET['page']) ? $_GET['page'] : 0;
