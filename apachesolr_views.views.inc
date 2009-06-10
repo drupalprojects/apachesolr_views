@@ -18,7 +18,7 @@ function apachesolr_views_views_handlers() {
         'parent' => 'views_handler_argument',
       ),
       'apachesolr_views_handler_argument_mlt' => array(
-        'parent' => 'views_handler_argument_node_nid',
+        'parent' => 'views_handler_argument_numeric',
       ),
       'apachesolr_views_handler_argument_tid' => array(
         'parent' => 'apachesolr_views_handler_argument',
@@ -58,6 +58,9 @@ function apachesolr_views_views_handlers() {
       ),
       'apachesolr_views_handler_filter_type' => array(
         'parent' => 'views_handler_filter_in_operator',
+      ),
+      'apachesolr_views_handler_filter_single' => array(
+        'parent' => 'views_handler_filter_string',
       ),
       'apachesolr_views_handler_sort' => array(
         'parent' => 'views_handler_sort',

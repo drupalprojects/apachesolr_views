@@ -105,50 +105,45 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * Build the query object. Load up all avaivable facets so the blocks work.
    */
   public function build() {    
-    
-    // TODO: add in config screen on teh View instead of using apachesolr settings
-    // NOTICE: we override the fl further down in this process. And the rows param
-    // does not take affect here as we set the rows in the execute() method
-    $this->_params += apachesolr_search_basic_params($this);
-    apachesolr_search_add_facet_params($this->_params, $this);
-    apachesolr_search_add_boost_params($this->_params, $this, $this->_solr_service);
-    
-    // Add in facets now
-    $this->_params['fq'] = $this->rebuild_fq();
-    
-    
-    // process subqueries
-    foreach ($this->_subqueries as $query_data) {
-      // process the query string first
-      $sub_query_string = $query_data['query']->get_query_basic();
-      if ($sub_query_string) {
-        $this->_query .= " {$query_data['q_op']} ({$sub_query_string})";
+    try {
+      // TODO: add in config screen on teh View instead of using apachesolr settings
+      // NOTICE: we override the fl further down in this process. And the rows param
+      // does not take affect here as we set the rows in the execute() method
+      $this->_params += apachesolr_search_basic_params($this);
+      apachesolr_search_add_facet_params($this->_params, $this);
+      apachesolr_search_add_boost_params($this->_params, $this, $this->_solr_service);
+      
+      // Add in facets now
+      $this->_params['fq'] = $this->rebuild_fq();
+      
+      
+      // process subqueries
+      foreach ($this->_subqueries as $query_data) {
+        // process the query string first
+        $sub_query_string = $query_data['query']->get_query_basic();
+        if ($sub_query_string) {
+          $this->_query .= " {$query_data['q_op']} ({$sub_query_string})";
+        }
+        
+        // now handle the filter query
+        $subfq = $query_data['query']->get_fq();
+        if (!empty($subfq)) {
+          $operator = $query_data['fq_op'];
+          $this->_params['fq'][] = "(" . implode(" {$operator} ", $subfq) .")";
+        }
+        
       }
       
-      // now handle the filter query
-      $subfq = $query_data['query']->get_fq();
-      if (!empty($subfq)) {
-        $operator = $query_data['fq_op'];
-        $this->_params['fq'][] = "(" . implode(" {$operator} ", $subfq) .")";
-      }
+      // add in the fields. These fields include the necessary fields.
+      $this->_params['fl'] = implode(',', $this->_used_fields);
       
+      // query template handling
+      if (!empty($this->_query_template)) {
+        $this->_params['qt'] = $this->_query_template;
+      }
     }
-    
-    // add in the fields. These fields include the necessary fields.
-    $this->_params['fl'] = implode(',', $this->_used_fields);
-    
-    // get the total docs
-    $data = $this->_solr_service->getLuke();
-    if (isset($data->index->numDocs)) {
-      $total = $data->index->numDocs;
-    }
-    else {
-      $total = db_result(db_query("SELECT COUNT(nid) FROM {node}"));
-    }
-    
-    // query template handling
-    if (!empty($this->_query_template)) {
-      $this->_params['qt'] = $this->_query_template;
+    catch (Exception $e) {
+      watchdog('apachesolr_views', $e->getMessage());
     }
   }
   
@@ -408,7 +403,11 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     }
     $path_parts = array(0 => $this->_base_path);
     foreach ($this->_view_arguments as $field => $argument) {
-      $path_part = $this->argument_part($field);
+      // because some arguments arn't standard base arguments we need to do things differently
+      // so that the facet blocks behave. So any argument thats not part of a facet block
+      // we have its value copied into the path
+      // arguments that are a facet block argument will be processed differently
+      $path_part = $this->part_of_facet_block($argument) ? $this->argument_part($field) : $argument->argument;
       if (!empty($path_part)) {
         $path_parts[$argument->position + 1] = $path_part;
         $wildcard_count = 0;
@@ -442,6 +441,24 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     }
     
     return substr($argument_path, 1);
+  }
+  
+  /**
+   * determine if argument field is part of a facet block
+   *
+   * @return bool
+   * Whether or not the provided argument could be in a facet block
+   */
+  protected function part_of_facet_block($argument) {
+    $facet_arguments = array(
+      'tid',
+      'type',
+      'uid',
+    );
+    // we use field instead of real_field
+    // because we want these specific ones defined in
+    // apachesolr_views.views.inc
+    return (in_array($argument->field, $facet_arguments));
   }
   
   /**

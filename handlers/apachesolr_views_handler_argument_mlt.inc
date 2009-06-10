@@ -1,6 +1,6 @@
 <?php
 // $Id$
-class apachesolr_views_handler_argument_mlt extends views_handler_argument_node_nid {
+class apachesolr_views_handler_argument_mlt extends views_handler_argument_numeric {
   
   /**
    * Override option_definition() to provide defaults
@@ -13,6 +13,9 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_node_
     $options['mlt_minwl'] = array('default' => '3');
     $options['mlt_maxwl'] = array('default' => '15');
     $options['mlt_maxqt'] = array('default' => '30');
+    
+    // type
+    $options['type'] = array('default' => 'node');
     return $options;
   }
   /**
@@ -27,12 +30,21 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_node_
     // TODO: can we exclude this argument??
     unset($form['not']);
     
+    $form['type'] = array(
+      '#type' => 'select',
+      '#title' => t('Object type'),
+      '#description' => t('Select the object type (node, user) that you will be present in the url '),
+      '#options' => array(
+        'node' => t('Node'),
+        'user' => t('User'),
+      ),
+      '#default_value' => $this->options['type'],
+    );
     $form['mlt_fl'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Fields for finding related content'),
       '#description' => t('Choose the fields to be used in calculating similarity. The default combination of %taxonomy_names and %title will provide relevant results for typical sites.', array("%taxonomy_names" => _apachesolr_field_name_map("taxonomy_names"), "%title" => _apachesolr_field_name_map("title"))),
       '#options' => apachesolr_mlt_get_fields(),
-      '#required' => TRUE,
       '#default_value' =>  $this->options['mlt_fl'],
     );
    
@@ -88,7 +100,14 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_node_
       'mlt_qf' => 'mlt.qf',
     );
     $this->query->change_query_template('mlt');
-    $this->query->set_param('mlt.fl', implode(',', $this->options['mlt_fl']));
+    
+    $mlt = array();
+    foreach ($this->options['mlt_fl'] as $option) {
+      if (!empty($option)) {
+        $mlt[] = $option;
+      }
+    }
+    $this->query->set_param('mlt.fl', implode(',', $mlt));
     
     // now set the configuration options for the calculation
     foreach ($mlt_specific_options as $form_key => $option_name) {
@@ -103,7 +122,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_node_
       $this->value = array($this->argument);
     }
     foreach ($this->value as $nid) {
-      $this->query->set_query('id:' . apachesolr_document_id($nid));
+      $this->query->set_query('id:' . apachesolr_document_id($nid, $this->options['type']));
     }
   }
 }
