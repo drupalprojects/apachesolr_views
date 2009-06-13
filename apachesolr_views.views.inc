@@ -83,6 +83,18 @@ function apachesolr_views_views_plugins() {
         'parent' => 'views_query',
       ),
     ),
+    'cache' => array(
+      'apachesolr-time' => array(
+        'path' => drupal_get_path('module', 'apachesolr_views') . '/plugins',
+        'title' => t('Time-based Solr Cache'),
+        'help' => t('Simple time-based caching of data extension for Solr Views'),
+        'handler' => 'apachesolr_views_plugin_cache_time',
+        'uses options' => TRUE,
+        'base' => array('apachesolr'),
+        'parent' => 'time',
+        //'help topic' => 'apachesolr-cache-time', // TODO!!!
+      ),
+    ),
   );
 
 }
