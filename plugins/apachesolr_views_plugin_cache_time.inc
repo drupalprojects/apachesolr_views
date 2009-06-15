@@ -21,7 +21,6 @@ class apachesolr_views_plugin_cache_time extends views_plugin_cache_time {
           'total_rows' => $this->view->total_rows,
           'pager' => $this->view->pager,
           'response' => apachesolr_static_response_cache(),
-          'query' => apachesolr_current_query(),
         );
         cache_set($this->get_results_key(), $data, $this->table);
         break;
@@ -52,7 +51,7 @@ class apachesolr_views_plugin_cache_time extends views_plugin_cache_time {
             $this->view->total_rows = $cache->data['total_rows'];
             $this->view->pager = $cache->data['pager'];
             apachesolr_static_response_cache($cache->data['response']);
-            apachesolr_current_query($cache->data['query']);
+            apachesolr_current_query($this->view->query);
             $this->view->execute_time = 0;
             apachesolr_has_searched(TRUE);
             return TRUE;
