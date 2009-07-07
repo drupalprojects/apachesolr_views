@@ -401,7 +401,6 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     if (empty($this->_view_arguments)) {
       return $_GET['q'];
     }
-    $path_parts = array(0 => $this->_base_path);
     foreach ($this->_view_arguments as $field => $argument) {
       // because some arguments arn't standard base arguments we need to do things differently
       // so that the facet blocks behave. So any argument thats not part of a facet block
@@ -417,8 +416,22 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         $wildcard_count++;
       }
     }
+    $arguments = explode('/', $this->_base_path);
+    $path = '';
+    foreach ($arguments as $arg) {
+      if ($arg == '%') {
+        $part = array_shift($path_parts);
+      }
+      else {
+        $part = $arg;
+      }
+      $path .= "/$part";
+    }
     
-    return implode('/', array_slice($path_parts, 0, count($path_parts) - $wildcard_count));
+    if (count($path_parts)) {
+      $path .= "/" .  implode('/', array_slice($path_parts, 0, count($path_parts) - $wildcard_count));
+    }
+    return substr($path, 1);
   }
   
   /**
