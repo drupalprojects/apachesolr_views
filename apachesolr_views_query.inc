@@ -47,8 +47,8 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   // @see get_path()
   protected $_view_arguments = array();
   
-  // from the view object used in the get_url_querystring() method
-  // @see get_url_querystring()
+  // from the view object used in the get_url_queryvalues() method
+  // @see get_url_queryvalues()
   protected $_view_filters = array();
   
   // this stores the base path for the view. we store it here as the
@@ -479,40 +479,50 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    *
    * @see l()
    */
-  function get_url_querystring() {
+  function get_url_queryvalues() {
     // goes through and finds all the exposed filters
-    $query_string = '';
+    $query_values = array();
     foreach ($this->_view_filters as $filter) {
       if ($filter->options['exposed']) {
         if ($filter->field == 'text' && !empty($this->_query)) {
           // the search exposed filter is special
-          $query_string .= '&' . $filter->options['expose']['identifier'] . '=' . $this->_query;
+          $query_values[$filter->options['expose']['identifier']] = $this->_query;
         }
         else if ($this->_facets[$filter->field]) {
-          $query_string .= '&' . $filter->options['expose']['identifier'] . '=' . $this->_facets[$filter->field];
-        }
-        else {
-          $query_string .= '&' . $filter->options['expose']['identifier'] . '=' . $_GET[$filter->options['expose']['identifier']];
+          $query_values[$filter->options['expose']['identifier']] = $this->_facets[$filter->field];
         }
       }
     }
     
     foreach ($this->_extra_query as $field => $value) {
-      $query_string .= "&$field=$value";
+      $query_values[$field] = $value;
     }
     
-    return !empty($query_string) ? substr($query_string, 1) : NULL;
+    return $query_values;
   }
   
   /**
    * set the solrsort. This currently doesn't work
    *
-   * @param string raw string to set the sort to
+   * @param string $field
+   * the field to sort on
+   *
+   * @param string $direction
+   * the direction in which to sort (ASC/DESC)
    */
-  function set_solrsort($sortstring) {
-    list($type, $direction) = explode(" ", $sortstring);
-    $this->add_sort($type, $direction);
+  function set_solrsort($field, $direction) {
+    $this->add_sort($field, $direction);
   }
+
+  /**
+   * Get the solrsort
+   *
+   * @return array
+   * array keyed with #name and #direction for every sort applied to this query
+   */
+   function get_solrsort() {
+     return $this->_params['sort'];
+   }
   
   /**
    * return an array of filters
