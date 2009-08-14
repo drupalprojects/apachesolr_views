@@ -14,6 +14,9 @@ function apachesolr_views_views_handlers() {
       'path' => drupal_get_path('module', 'apachesolr_views') . '/handlers',
     ),
     'handlers' => array(
+      'apachesolr_views_handler_argument_optionwidget' => array(
+        'parent' => 'apachesolr_views_handler_argument',
+      ),
       'apachesolr_views_handler_argument' => array(
         'parent' => 'views_handler_argument',
       ),
@@ -61,6 +64,9 @@ function apachesolr_views_views_handlers() {
       ),
       'apachesolr_views_handler_filter_single' => array(
         'parent' => 'views_handler_filter_string',
+      ),
+      'apachesolr_views_handler_filter_node_access' => array(
+        'parent' => 'views_handler_filter_node_access',
       ),
       'apachesolr_views_handler_sort' => array(
         'parent' => 'views_handler_sort',
@@ -351,6 +357,17 @@ function apachesolr_views_views_data() {
     ),
   );
   
+  // node access
+  if (module_exists('apachesolr_nodeaccess')) {
+    $data['apachesolr']['access'] = array(
+      'title' => t('Node Access Control'),
+      'help' => t('Return results from Apache Solr that respect node access'),
+      'filter' => array(
+        'handler' => 'apachesolr_views_handler_filter_node_access',
+      ),
+    );
+  }
+  
   // provide CCK mappings filters
   foreach (apachesolr_cck_fields() as $name => $field) {
     // TODO: can we make use of CCK's mapping already and just override
@@ -362,6 +379,10 @@ function apachesolr_views_views_data() {
         'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
         'filter' => array(
           'handler' => 'apachesolr_views_handler_optionwidget_filter',
+          'cck_field' => $field,
+        ),
+        'argument' => array(
+          'handler' => 'apachesolr_views_handler_argument_optionwidget',
           'cck_field' => $field,
         ),
       );

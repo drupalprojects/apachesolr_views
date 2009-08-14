@@ -70,7 +70,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   
   // string to identify the current Views name
   protected $_current_views_name = '';
-  
+    
   /**
    * Views init() function
    */
@@ -111,7 +111,9 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       // does not take affect here as we set the rows in the execute() method
       $this->_params += apachesolr_search_basic_params($this);
       apachesolr_search_add_facet_params($this->_params, $this);
-      apachesolr_search_add_boost_params($this->_params, $this, $this->_solr_service);
+      if ($this->_query_template == 'dismax' || empty($this->_query_template)) {
+        apachesolr_search_add_boost_params($this->_params, $this, $this->_solr_service);
+      }
       
       // Add in facets now
       $this->_params['fq'] = $this->rebuild_fq();
@@ -131,6 +133,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
           $operator = $query_data['fq_op'];
           $this->_params['fq'][] = "(" . implode(" {$operator} ", $subfq) .")";
         }
+        
         
       }
       
@@ -203,9 +206,12 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       
       // The response is cached so that it is accessible to the blocks and
       // anything else that needs it beyond the initial search.
-      apachesolr_static_response_cache($response);
-      apachesolr_has_searched(TRUE);
-      apachesolr_current_query($this);
+      // TODO: allow this to be configurable on the Views UI
+      if ($view->display[$view->current_display]->display_plugin != 'block') {
+        apachesolr_static_response_cache($response);
+        apachesolr_has_searched(TRUE);
+        apachesolr_current_query($this);
+      }
       
       if ($total > 0) {
         $results = $response->response->docs;
@@ -399,7 +405,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   function get_path() {
     $wildcard_count = 0; // this is used to remove the some/path/argument/all/all paths
     if (empty($this->_view_arguments)) {
-      return $_GET['q'];
+      return $this->_base_path;
     }
     foreach ($this->_view_arguments as $field => $argument) {
       // because some arguments arn't standard base arguments we need to do things differently
@@ -428,10 +434,14 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       $path .= "/$part";
     }
     
-    if (count($path_parts)) {
+    if (count($path_parts) && $wildcard_count != count($path_parts)) {
       $path .= "/" .  implode('/', array_slice($path_parts, 0, count($path_parts) - $wildcard_count));
     }
-    return substr($path, 1);
+    $path = substr($path, 1);
+    if (trim($path) == trim(variable_get('site_frontpage', 'node'))) {
+      return '<front>';
+    }
+    return $path;
   }
   
   /**
@@ -453,7 +463,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       }
     }
     
-    return substr($argument_path, 1);
+    return drupal_substr($argument_path, 1);
   }
   
   /**
@@ -473,7 +483,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     // apachesolr_views.views.inc
     return (in_array($argument->field, $facet_arguments));
   }
-  
+    
   /**
    * return any query string for use in the l function
    *
