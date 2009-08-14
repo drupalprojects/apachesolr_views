@@ -359,7 +359,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   function has_filter($field, $value) {
     if (isset($this->_facets[$field])) {
       foreach ($this->_facets[$field] as $definition) {
-        if ($definition['value'] == $value) {
+        if ($definition['value'] == $value && $definition['exclude'] == FALSE) {
           return TRUE;
         }
       }
