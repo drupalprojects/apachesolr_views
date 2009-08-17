@@ -31,9 +31,9 @@ class apachesolr_views_handler_filter_type extends views_handler_filter_in_opera
   }
 
   public function query() {
-    if (empty($this->value)) {
+    if (empty($this->value) && ($this->options['exposed'] && empty($this->options['expose']['optional']))) {
       // Add term that will yield no results
-      $this->query->add_filter('nid', '-1');
+      $this->query->add_filter('nid', apachesolr_views_query::escape_term('-1'));
     }
     else {
       foreach ($this->value as $type) {
