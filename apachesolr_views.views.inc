@@ -17,6 +17,9 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_argument_optionwidget' => array(
         'parent' => 'apachesolr_views_handler_argument',
       ),
+      'apachesolr_views_handler_argument_node_type' => array(
+        'parent' => 'apachesolr_views_handler_argument',
+      ),
       'apachesolr_views_handler_argument' => array(
         'parent' => 'views_handler_argument',
       ),
@@ -67,6 +70,9 @@ function apachesolr_views_views_handlers() {
       ),
       'apachesolr_views_handler_filter_node_access' => array(
         'parent' => 'views_handler_filter_node_access',
+      ),
+      'apachesolr_views_handler_filter_boolean' => array(
+        'parent' => 'views_handler_filter_boolean_operator',
       ),
       'apachesolr_views_handler_sort' => array(
         'parent' => 'views_handler_sort',
@@ -187,7 +193,7 @@ function apachesolr_views_views_data() {
     'title' => t('Type'),
     'help' => t('The type of a node (for example, "blog entry", "forum post", "story", etc).'),
     'argument' => array(
-      'handler' => 'apachesolr_views_handler_argument',
+      'handler' => 'apachesolr_views_handler_argument_node_type',
     ),
     'field' => array(
       'handler' => 'apachesolr_views_handler_field_generic',
@@ -367,6 +373,16 @@ function apachesolr_views_views_data() {
       ),
     );
   }
+  
+  $data['apachesolr']['promote'] = array(
+    'title' => t('Promoted to Front Page'),
+    'help' => t('Whether or not this node was promoted to the front page'),
+    'filter' => array(
+      'handler' => 'apachesolr_views_handler_filter_boolean',
+      'label' => t('Promoted'),
+      'type' => 'yes-no',
+    ),
+  );
   
   // provide CCK mappings filters
   foreach (apachesolr_cck_fields() as $name => $field) {
