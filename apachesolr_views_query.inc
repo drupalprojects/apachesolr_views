@@ -83,7 +83,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * Constructor build up the avialable sorts
    */
   public function __construct() {
-    $data = _views_fetch_data('apachesolr');
+    $data = views_fetch_data('apachesolr');
     foreach ($data as $field_name => $field) {
       if (!empty($field['sort'])) {
         $this->_available_sorts[$field_name] = array(
