@@ -70,11 +70,17 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   
   // string to identify the current Views name
   protected $_current_views_name = '';
+  
+  protected $base_table = 'apachesolr';
+  
+  protected $base_field = 'nid';
     
   /**
    * Views init() function
    */
   public function init($base_table, $base_field) {
+    $this->base_table = $base_table;  // Predefine these above, for clarity.
+    $this->base_field = $base_field;
     $this->_solr_service = apachesolr_get_solr();
     $this->id = ++self::$idCount;
   }
