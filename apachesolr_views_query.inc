@@ -71,6 +71,15 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   // string to identify the current Views name
   protected $_current_views_name = '';
   
+  // Array of query fields
+  protected $_query_fields = array();
+  
+  // array of boost functions
+  protected $_boost_functions = array();
+  
+  // array of boost queries
+  protected $_boost_queries = array();
+  
   protected $base_table = 'apachesolr';
   
   protected $base_field = 'nid';
@@ -110,7 +119,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   /**
    * Build the query object. Load up all avaivable facets so the blocks work.
    */
-  public function build() {    
+  public function build() {
     try {
       // TODO: add in config screen on teh View instead of using apachesolr settings
       // NOTICE: we override the fl further down in this process. And the rows param
@@ -118,7 +127,21 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       $this->_params += apachesolr_search_basic_params($this);
       apachesolr_search_add_facet_params($this->_params, $this);
       if ($this->_query_template == 'dismax' || empty($this->_query_template)) {
-        apachesolr_search_add_boost_params($this->_params, $this, $this->_solr_service);
+        // add in the qf to the params array here
+        $this->_params['qf'] = array();
+        foreach ($this->_query_fields as $field_name => $boost) {
+          $this->_params['qf'][] = "$field_name^$boost";
+        }
+        
+        // add in the bf
+        $this->_params['bf'] = $this->_boost_functions;
+        
+        // build the bq
+        foreach ($this->_boost_queries as $field_name => $fields) {
+          foreach ($fields as $field_value => $boost) {
+            $this->_params['bq'][] = "$field_name:$field_value^$boost";
+          }
+        }
       }
       
       // Add in facets now
@@ -139,8 +162,6 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
           $operator = $query_data['fq_op'];
           $this->_params['fq'][] = "(" . implode(" {$operator} ", $subfq) .")";
         }
-        
-        
       }
       
       // add in the fields. These fields include the necessary fields.
@@ -164,6 +185,88 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       $function = $module . '_apachesolr_modify_query';
       $function($this, $this->_params, 'apachesolr_views_query');
     }
+    
+    
+    // Build in the default qf, bf and bq if they haven't been set
+    // TODO: remove this when we expose and interface via Views UI
+    if (empty($this->_query_template) || $this->_query_template == 'dismax') {
+      // if no query fields are set, use default
+      // TODO: remove when we have this exposed to the Views UI
+      if (empty($this->_query_fields)) {
+        $qf = variable_get('apachesolr_search_query_fields', array());
+        foreach ($qf as $field_name => $boost) {
+            if (!empty($boost)) {
+            // if its a normed field
+            if ($field_name == 'body') {
+              $boost *= 40.0;
+            }
+            $this->add_query_field($field_name, $boost);
+          }
+        }
+      }
+      
+      // now we do boost functions
+      if (empty($this->_boost_functions)) {
+        $this->_params['bf'] = array();
+        $solr = apachesolr_get_solr();
+        $total = 0;
+        if (isset($solr)) {
+          $data = $solr->getLuke();
+          if (isset($data) && isset($data->index->numDocs)) {
+            $total = $data->index->numDocs;
+          }
+        }
+        
+        if (empty($total)) {
+          $total = db_result(db_query("SELECT COUNT(nid) FROM {node}"));
+        }
+        
+        // date_settings
+        $date_settings = variable_get('apachesolr_search_date_boost', '4:200.0');
+        list($date_steepness, $date_boost) = explode(':', $date_settings);
+        if (!empty($date_boost)) {
+          $values = array($date_steepness, $total, $total, $date_boost);
+          $this->add_boost_function("recip(rord(created),%f,%d,%d)^%f", $values);
+        }
+        // comment_settings
+        $comment_settings = variable_get('apachesolr_search_comment_boost', '0:0');
+        list($comment_steepness, $comment_boost) = explode(':', $comment_settings);
+        if ($comment_boost) {
+          $values = array($comment_steepness, $total, $total, $comment_boost);
+          $this->add_boost_function("recip(rord(comment_count),%f,%d,%d)^%f", $values);
+        }
+        // changed_settings
+        $changed_settings = variable_get('apachesolr_search_changed_boost', '0:0');
+        list($changed_steepness, $changed_boost) = explode(':', $changed_settings);
+        if ($changed_boost) {
+          $values = array($changed_steepness, $total, $total, $changed_boost);
+          $this->add_boost_function("recip(rord(last_comment_or_change),%f,%d,%d)^%f", $values);
+        }
+      }
+      // now we do boost queries
+      if (empty($this->_boost_queries)) {
+        // Boost for nodes with sticky bit set.
+        $sticky_boost = variable_get('apachesolr_search_sticky_boost', 0);
+        if ($sticky_boost) {
+          $this->add_boost_query('sticky', 'true', $sticky_boost);
+        }
+        // Boost for nodes with promoted bit set.
+        $promote_boost = variable_get('apachesolr_search_promote_boost', 0);
+        if ($promote_boost) {
+          $this->add_boost_query('promote', 'true', $promote_boost);
+        }
+        // Modify the weight of results according to the node types.
+        $type_boosts = variable_get('apachesolr_search_type_boosts', array());
+        if (!empty($type_boosts)) {
+          foreach ($type_boosts as $type => $boost) {
+            // Only add a param if the boost is != 0 (i.e. > "Normal").
+            if (!empty($boost)) {
+              $this->add_boost_query('type', $type, $boost);
+            }
+          }
+        }
+      }
+    }
   }
   
   /**
@@ -178,7 +281,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $view->result = array();
     $this->_view_arguments = $view->argument;
     $this->_view_filters = $view->filter;
-    $this->_base_path = $view->display[$view->current_display]->display_options['path'];
+    $this->_base_path = isset($view->display[$view->current_display]->display_options['path']) ? $view->display[$view->current_display]->display_options['path'] : '';
     $this->_current_display = $view->current_display;
     $this->_current_views_name = $view->name;
 
@@ -673,6 +776,76 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    */
   function set_available_sort($field, $sort) {
     // TODO: hmm.. wierd... we pull in all the sorts from Views data fields
+  }
+  
+  /**
+   * adds query fields to the query with a specified weight
+   *
+   * @param string $field_name
+   * name of the field in the schema
+   *
+   * @param double $boost
+   * the amount of boost applied
+   */
+  function add_query_field($field_name, $boost = 1.0) {
+    $this->_query_fields[$field_name] = $boost;
+  }
+  
+  /**
+   * remove a query field
+   *
+   * @param $field_name
+   * the name of the field in the schema
+   */
+  function remove_query_field($field_name) {
+    unset($this->_query_fields[$field_name]);
+  }
+  
+  /**
+   * adds a query boost function to the query
+   *
+   * @param string $function
+   * String with placeholders can use one or more of: http://wiki.apache.org/solr/FunctionQuery
+   *
+   * @param array $values
+   * the values to be sprintf'd in place
+   */
+  function add_boost_function($function, array $values) {
+    $this->_boost_functions[] = vsprintf($function, $values);
+  }
+  
+  /**
+   * adds a query boost for a specific field/value combo
+   *
+   * @param string $field_name
+   * name of field in the schema
+   *
+   * @param string $field_value
+   * the value of the field to boost
+   *
+   * @param double $boost_value
+   * the amount of boost to apply
+   */
+  function add_boost_query($field_name, $field_value, $boost_value) {
+    $this->_boost_queries[$field_name][$field_value] = $boost_value;
+  }
+  
+  /**
+   * remove boost query
+   *
+   * @param string $field_name
+   * the name of the field in the schema
+   *
+   * @param string $field_value
+   * The value of the field we are boosting. Can be NULL to remove all boosts on $field_name
+   */
+  function remove_boost_query($field_name, $field_value = NULL) {
+    if ($field_value) {
+      unset($this->_boost_queries[$field_name][$field_value]);
+    }
+    else {
+      unset($this->_boost_queries[$field_name]);
+    }
   }
   
   /**
