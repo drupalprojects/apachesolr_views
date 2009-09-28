@@ -30,8 +30,10 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   protected $_solr_service;
   
   // Array containing the parameters that will be handed to Solr.
-  protected $_params = array();
-  
+  protected $_params = array(
+    'facet.mincount' => 1,
+    'facet.sort' => 'true'
+  );
   // array all of the fields for the query
   protected $_used_fields = array(
     'id',
@@ -122,9 +124,8 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   public function build() {
     try {
       // TODO: add in config screen on teh View instead of using apachesolr settings
-      // NOTICE: we override the fl further down in this process. And the rows param
-      // does not take affect here as we set the rows in the execute() method
-      $this->_params += apachesolr_search_basic_params($this);
+      // here we add in all the facet stuff for things that are turned on
+      // we rely on the apachesolr_search module to provide them for us
       apachesolr_search_add_facet_params($this->_params, $this);
       if ($this->_query_template == 'dismax' || empty($this->_query_template)) {
         // add in the qf to the params array here
