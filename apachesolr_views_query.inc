@@ -31,6 +31,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   
   // Array containing the parameters that will be handed to Solr.
   protected $_params = array(
+    'facet' => 'true',
     'facet.mincount' => 1,
     'facet.sort' => 'true'
   );
