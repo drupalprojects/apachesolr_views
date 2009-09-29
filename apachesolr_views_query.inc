@@ -122,72 +122,6 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * Build the query object. Load up all avaivable facets so the blocks work.
    */
   public function build() {
-    try {
-      // TODO: add in config screen on teh View instead of using apachesolr settings
-      // here we add in all the facet stuff for things that are turned on
-      // we rely on the apachesolr_search module to provide them for us
-      apachesolr_search_add_facet_params($this->_params, $this);
-      if ($this->_query_template == 'dismax' || empty($this->_query_template)) {
-        // add in the qf to the params array here
-        $this->_params['qf'] = array();
-        foreach ($this->_query_fields as $field_name => $boost) {
-          $this->_params['qf'][] = "$field_name^$boost";
-        }
-        
-        // add in the bf
-        $this->_params['bf'] = $this->_boost_functions;
-        
-        // build the bq
-        foreach ($this->_boost_queries as $field_name => $fields) {
-          foreach ($fields as $field_value => $boost) {
-            $this->_params['bq'][] = "$field_name:$field_value^$boost";
-          }
-        }
-      }
-      
-      // Add in facets now
-      $this->_params['fq'] = $this->rebuild_fq();
-      
-      
-      // process subqueries
-      foreach ($this->_subqueries as $query_data) {
-        // process the query string first
-        $sub_query_string = $query_data['query']->get_query_basic();
-        if ($sub_query_string) {
-          $this->_query .= " {$query_data['q_op']} ({$sub_query_string})";
-        }
-        
-        // now handle the filter query
-        $subfq = $query_data['query']->get_fq();
-        if (!empty($subfq)) {
-          $operator = $query_data['fq_op'];
-          $this->_params['fq'][] = "(" . implode(" {$operator} ", $subfq) .")";
-        }
-      }
-      
-      // add in the fields. These fields include the necessary fields.
-      $this->_params['fl'] = implode(',', $this->_used_fields);
-      
-      // query template handling
-      if (!empty($this->_query_template)) {
-        $this->_params['qt'] = $this->_query_template;
-      }
-    }
-    catch (Exception $e) {
-      watchdog('apachesolr_views', $e->getMessage());
-    }
-  }
-  
-  /**
-   * Let modules modify the query just prior to finalizing it.
-   */
-  public function alter(&$view) {
-    foreach (module_implements('apachesolr_modify_query') as $module) {
-      $function = $module . '_apachesolr_modify_query';
-      $function($this, $this->_params, 'apachesolr_views_query');
-    }
-    
-    
     // Build in the default qf, bf and bq if they haven't been set
     // TODO: remove this when we expose and interface via Views UI
     if (empty($this->_query_template) || $this->_query_template == 'dismax') {
@@ -267,6 +201,70 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
           }
         }
       }
+    }
+    try {
+      // TODO: add in config screen on teh View instead of using apachesolr settings
+      // here we add in all the facet stuff for things that are turned on
+      // we rely on the apachesolr_search module to provide them for us
+      apachesolr_search_add_facet_params($this->_params, $this);
+      if ($this->_query_template == 'dismax' || empty($this->_query_template)) {
+        // add in the qf to the params array here
+        $this->_params['qf'] = array();
+        foreach ($this->_query_fields as $field_name => $boost) {
+          $this->_params['qf'][] = "$field_name^$boost";
+        }
+        
+        // add in the bf
+        $this->_params['bf'] = $this->_boost_functions;
+        
+        // build the bq
+        foreach ($this->_boost_queries as $field_name => $fields) {
+          foreach ($fields as $field_value => $boost) {
+            $this->_params['bq'][] = "$field_name:$field_value^$boost";
+          }
+        }
+      }
+      
+      // Add in facets now
+      $this->_params['fq'] = $this->rebuild_fq();
+      
+      
+      // process subqueries
+      foreach ($this->_subqueries as $query_data) {
+        // process the query string first
+        $sub_query_string = $query_data['query']->get_query_basic();
+        if ($sub_query_string) {
+          $this->_query .= " {$query_data['q_op']} ({$sub_query_string})";
+        }
+        
+        // now handle the filter query
+        $subfq = $query_data['query']->get_fq();
+        if (!empty($subfq)) {
+          $operator = $query_data['fq_op'];
+          $this->_params['fq'][] = "(" . implode(" {$operator} ", $subfq) .")";
+        }
+      }
+      
+      // add in the fields. These fields include the necessary fields.
+      $this->_params['fl'] = implode(',', $this->_used_fields);
+      
+      // query template handling
+      if (!empty($this->_query_template)) {
+        $this->_params['qt'] = $this->_query_template;
+      }
+    }
+    catch (Exception $e) {
+      watchdog('apachesolr_views', $e->getMessage());
+    }
+  }
+  
+  /**
+   * Let modules modify the query just prior to finalizing it.
+   */
+  public function alter(&$view) {
+    foreach (module_implements('apachesolr_modify_query') as $module) {
+      $function = $module . '_apachesolr_modify_query';
+      $function($this, $this->_params, 'apachesolr_views_query');
     }
   }
   
