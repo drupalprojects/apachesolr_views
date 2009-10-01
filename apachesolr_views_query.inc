@@ -204,7 +204,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       }
     }
     try {
-      // TODO: add in config screen on teh View instead of using apachesolr settings
+      // TODO: add in config screen on the View instead of using apachesolr settings
       // here we add in all the facet stuff for things that are turned on
       // we rely on the apachesolr_search module to provide them for us
       apachesolr_search_add_facet_params($this->_params, $this);
@@ -351,6 +351,22 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $view->execute_time = views_microtime() - $start_time;
   }
   
+  /**
+   * Set keywords in this query.
+   *
+   * @param $keys
+   *   New keywords
+   */
+  function set_keys($keys) {
+    $this->keys = $keys;
+  }
+
+  /**
+   * Get this query's keywords.
+   */
+  function get_keys() {
+    return $this->keys;
+  }
   
   /**
    * Add a field to retrieve.
