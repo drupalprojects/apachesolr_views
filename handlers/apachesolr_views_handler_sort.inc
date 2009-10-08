@@ -13,8 +13,8 @@ class apachesolr_views_handler_sort extends views_handler_sort {
   public function query() {
     /* These fields have a special "*_sort" field for sorting: */
     $special_sort_fields = array(
-      'name' => 'name_sort',
-      'title' => 'title_sort',
+      'name' => 'sort_name',
+      'title' => 'sort_title',
     );
     $order = strtolower($this->options['order']);
     

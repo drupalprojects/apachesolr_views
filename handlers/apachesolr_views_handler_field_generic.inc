@@ -153,8 +153,8 @@ class apachesolr_views_handler_field_generic {
   public function click_sort($order) {
     /* These fields have a special "*_sort" field for sorting: */
     $special_sort_fields = array(
-      'name' => 'name_sort',
-      'title' => 'title_sort',
+      'name' => 'sort_name',
+      'title' => 'sort_title',
     );
     
     if (empty($special_sort_fields[$this->real_field])) {
