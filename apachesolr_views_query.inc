@@ -410,7 +410,8 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     if ($single) {
       $this->_sorts = array();
     }
-    $this->_sorts[$field] = $order;
+    // don't need drupal_strtolower, this isn't a UTF-8 string
+    $this->_sorts[$field] = strtolower($order);
   }
   
   /**
