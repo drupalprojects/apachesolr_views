@@ -68,6 +68,9 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   // array to store the sorts for get_available_sorts() call
   protected $_available_sorts = array();
   
+  // array of sorts to apply to the query keyed by field => direction
+  protected $_sorts = array();
+  
   // string to identify the current Views display
   protected $_current_display = '';
   
@@ -249,6 +252,13 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       // add in the fields. These fields include the necessary fields.
       $this->_params['fl'] = implode(',', $this->_used_fields);
       
+      // build up the sorts here
+      $sort_strings = array();
+      foreach ($this->_sorts as $name => $direction) {
+        $sort_strings[] = "$name $direction";
+      }
+      $this->_params['sort'] = implode(',', $sort_strings);
+      
       // query template handling
       if (!empty($this->_query_template)) {
         $this->_params['qt'] = $this->_query_template;
@@ -397,13 +407,10 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * @param $single If TRUE, the results will only be sorted by this order.
    */
   public function add_sort($field, $order, $single = FALSE) {
-    $sort = $field . ' ' . strtolower($order);
-    if (empty($this->_params['sort']) || $single) {
-      $this->_params['sort'] = $sort;
+    if ($single) {
+      $this->_sorts = array();
     }
-    else {
-      $this->_params['sort'] .= ',' . $sort;
-    }
+    $this->_sorts[$field] = $order;
   }
   
   /**
@@ -656,10 +663,10 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * Get the solrsort
    *
    * @return array
-   * array keyed with #name and #direction for every sort applied to this query
+   * array keyed with name => direction
    */
    function get_solrsort() {
-     return $this->_params['sort'];
+     return $this->_sort;
    }
   
   /**
