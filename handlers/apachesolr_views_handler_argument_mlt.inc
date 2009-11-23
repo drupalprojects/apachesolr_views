@@ -7,7 +7,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
    */
   function option_definition() {
     $options = parent::option_definition();
-    $options['mlt_fl'] = array('default' => array('title' => 'title', 'taxonomy_names' => 'taxonomy_names'));
+    $options['mlt_fl'] = array('default' => array('title' => '1.0', 'taxonomy_names' => '1.0'));
     $options['mlt_mintf'] = array('default' => '1');
     $options['mlt_mindf'] = array('default' => '1');
     $options['mlt_minwl'] = array('default' => '3');
@@ -26,7 +26,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
     parent::options_form($form, $form_state);
     // TODO: figure out how to do this. cant do id: 123 id: 456 can we?
     unset($form['break_phrase']);
-    
+
     // TODO: can we exclude this argument??
     unset($form['not']);
     
@@ -40,13 +40,20 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
       ),
       '#default_value' => $this->options['type'],
     );
-    $form['mlt_fl'] = array(
-      '#type' => 'checkboxes',
-      '#title' => t('Fields for finding related content'),
-      '#description' => t('Choose the fields to be used in calculating similarity. The default combination of %taxonomy_names and %title will provide relevant results for typical sites.', array("%taxonomy_names" => _apachesolr_field_name_map("taxonomy_names"), "%title" => _apachesolr_field_name_map("title"))),
-      '#options' => apachesolr_mlt_get_fields(),
-      '#default_value' =>  $this->options['mlt_fl'],
-    );
+
+    // Grab the mlt fields.
+    $mlt_fields = apachesolr_mlt_get_fields();
+    $weights = drupal_map_assoc(array('21.0', '13.0', '8.0', '5.0', '3.0', '2.0', '1.0', '0.8', '0.5', '0.3', '0.2', '0.1'));
+    $weights['0'] = t('Omit');
+    $form['mlt_fl'] = array('#type' => 'fieldset', '#tree' => TRUE, '#title' => t('Fields') );
+    foreach ($mlt_fields as $key => $description) {
+       $form['mlt_fl'][$key] = array(
+	 '#type' => 'select',
+	 '#options' => $weights,
+	 '#title' => $description,
+	 '#default_value' => isset($this->options['mlt_fl'][$key]) ? $this->options['mlt_fl'][$key] : '0',
+      );
+    }
    
     $options = drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7));
     $form['mlt_mintf'] = array(
@@ -100,14 +107,16 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
       'mlt_qf' => 'mlt.qf',
     );
     $this->query->change_query_template('mlt');
-    
     $mlt = array();
-    foreach ($this->options['mlt_fl'] as $option) {
-      if (!empty($option)) {
-        $mlt[] = $option;
-      }
+    $field_boosts = array(); 
+    // Set the boosts for each selected field.
+    foreach (array_filter($this->options['mlt_fl']) as $field => $boost) {
+      $mlt[] = $field;
+      $field_boosts[] = "$field^$boost";
     }
+
     $this->query->set_param('mlt.fl', implode(',', $mlt));
+    $this->query->set_param('mlt.qf', $field_boosts);
     
     // now set the configuration options for the calculation
     foreach ($mlt_specific_options as $form_key => $option_name) {
