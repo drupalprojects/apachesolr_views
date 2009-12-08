@@ -15,6 +15,14 @@ function apachesolr_views_views_api() {
 }
 
 /**
+ * Implementation of hook_views_plugins_alter().
+ */
+function apachesolr_views_plugins_alter(&$plugins) {
+  // Add apachesolr to the base of the node row plugin.
+  $plugins['row']['node']['base'][] = 'apachesolr';
+}
+
+/**
  * Implementation of hook_theme().
  */
 function apachesolr_views_theme() {
