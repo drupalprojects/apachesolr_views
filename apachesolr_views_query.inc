@@ -1,5 +1,4 @@
 <?php
-
 // $Id$ 
 
 // TODO: Spellchecker field? What todo about spellchecker...
@@ -125,7 +124,15 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   /**
    * Build the query object. Load up all avaivable facets so the blocks work.
    */
-  public function build() {
+  public function build(&$view) {
+    $this->init_pager($view);
+    if ($this->pager->use_pager()) {
+      $this->pager->set_current_page($view->current_page);
+    }
+
+    // Let the pager modify the query to add limits.
+    $this->pager->query();
+
     // Build in the default qf, bf and bq if they haven't been set
     // TODO: remove this when we expose and interface via Views UI
     if (empty($this->_query_template) || $this->_query_template == 'dismax') {
@@ -295,34 +302,14 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $this->_current_display = $view->current_display;
     $this->_current_views_name = $view->name;
 
+    // Let the pager modify the query to add limits.
+    $this->pager->pre_execute($this->_query, $args);
+
     try {
-      // TODO: handle multiple pages seperated by commas. @see views_plugin_query_default.inc
-      $page = isset($_GET['page']) ? $_GET['page'] : 0;
-      $offset = $page * $view->pager['items_per_page'];
-      
-      $response = $this->_solr_service->search($this->_query, $offset, $view->pager['items_per_page'], $this->_params);
+      $response = $this->_solr_service->search($this->_query, $this->offset, $this->limit, $this->_params);
       
       $view->total_rows = $total = $response->response->numFound;
-      
-      // we do a fake pager here. Set the globals so the pager works (tm)
-      if (!empty($view->pager['use_pager'])) {
-        $view->pager['current_page'] = $offset / $view->pager['items_per_page'];
-        
-        // OOO! globals. This is to make paging work..
-        global $pager_page_array, $pager_total, $pager_total_items;
-        
-        // Set the item count for the pager.
-        $pager_total_items[$view->pager['element']] = $view->total_rows;
-        
-        // Calculate and set the count of available pages.
-        $pager_total[$view->pager['element']] = ceil($pager_total_items[$view->pager['element']] / $view->pager['items_per_page']);
 
-        // What page was requested:
-        // TODO: handle multiple page requests seperated by commas.
-        $pager_page_array = array($page);
-        $pager_page_array[$view->pager['element']] = $view->pager['current_page'];
-      }
-      
       // The response is cached so that it is accessible to the blocks and
       // anything else that needs it beyond the initial search.
       // TODO: allow this to be configurable on the Views UI
@@ -357,10 +344,28 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       watchdog('Apache Solr', $e->getMessage(), NULL, WATCHDOG_ERROR);
       apachesolr_failure(t('Solr search'), is_null($query) ? $this->_keys : $query->get_query_basic());
     }
-    
+
+    $this->pager->total_items = $view->total_rows;
+    $this->pager->update_page_info();
+    $this->pager->post_execute($view->result);
+
     $view->execute_time = views_microtime() - $start_time;
   }
-  
+
+  /**
+   * Set a LIMIT on the query, specifying a maximum number of results.
+   */
+  function set_limit($limit) {
+    $this->limit = $limit;
+  }
+
+  /**
+   * Set an OFFSET on the query, specifying a number of results to skip
+   */
+  function set_offset($offset) {
+    $this->offset = $offset;
+  }
+
   /**
    * Set keywords in this query.
    *
