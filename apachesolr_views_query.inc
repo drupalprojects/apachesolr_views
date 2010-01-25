@@ -313,7 +313,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       // The response is cached so that it is accessible to the blocks and
       // anything else that needs it beyond the initial search.
       // TODO: allow this to be configurable on the Views UI
-      if ($view->display[$view->current_display]->display_plugin != 'block') {
+      if (!empty($this->_base_path)) {
         apachesolr_static_response_cache($response);
         apachesolr_has_searched(TRUE);
         apachesolr_current_query($this);
