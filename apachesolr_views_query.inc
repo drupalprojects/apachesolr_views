@@ -298,7 +298,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $view->result = array();
     $this->_view_arguments = $view->argument;
     $this->_view_filters = $view->filter;
-    $this->_base_path = isset($view->display[$view->current_display]->display_options['path']) ? $view->display[$view->current_display]->display_options['path'] : '';
+    $this->_base_path = $view->get_path();
     $this->_current_display = $view->current_display;
     $this->_current_views_name = $view->name;
 
