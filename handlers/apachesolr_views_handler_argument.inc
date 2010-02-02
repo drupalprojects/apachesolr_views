@@ -21,6 +21,13 @@ class apachesolr_views_handler_argument extends views_handler_argument {
       $this->query->add_filter($this->real_field, apachesolr_views_query::escape_term($facet_value));
     }
   }
+
+  function option_definition() {
+    $options = parent::option_definition();
+    $options['break_phrase'] = array('default' => FALSE);
+
+    return $options;
+  }
   
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
