@@ -540,7 +540,10 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   /**
    * return the search path
    */
-  function get_path() {
+  function get_path($new_keys = NULL) {
+    if (isset($new_keys)) {
+      $this->set_query($new_keys);
+    }
     $wildcard_count = 0; // this is used to remove the some/path/argument/all/all paths
     if (empty($this->_view_arguments)) {
       return $this->_base_path;
@@ -632,7 +635,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $query_values = array();
     foreach ($this->_view_filters as $filter) {
       if ($filter->options['exposed']) {
-        if ($filter->field == 'text' && !empty($this->_query)) {
+        if ($filter->field == 'text') {
           // the search exposed filter is special
           $query_values[$filter->options['expose']['identifier']] = $this->_query;
         }
