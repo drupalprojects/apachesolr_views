@@ -38,9 +38,6 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_field_date' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
-      'apachesolr_views_handler_field_generic' => array(
-        'parent' => 'views_object',
-      ),
       'apachesolr_views_handler_field_taxonomy' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
@@ -130,12 +127,8 @@ function apachesolr_views_views_data() {
     'field' => array(
       'name field' => 'title',
       'numeric' => TRUE,
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_node',
       'click sortable' => TRUE,
-      'apachesolr base handler' => array(
-        'table' => 'node',
-        'field' => 'nid',
-      ),
     ),
     'sort' => array(
       'handler' => 'apachesolr_views_handler_sort',
@@ -148,12 +141,8 @@ function apachesolr_views_views_data() {
       'handler' => 'apachesolr_views_handler_argument',
     ),
     'field' => array(
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_node',
       'click sortable' => TRUE,
-      'apachesolr base handler' => array(
-        'table' => 'node',
-        'field' => 'title',
-      ),
      ),
     'sort' => array(
       'handler' => 'apachesolr_views_handler_sort',
@@ -163,12 +152,8 @@ function apachesolr_views_views_data() {
     'title' => t('Creation date'),
     'help' => t('The date the node was created.'),
     'field' => array(
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
-      'apachesolr base handler' => array(
-        'table' => 'node',
-        'field' => 'created',
-      ),
     ),
     'sort' => array(
       'handler' => 'apachesolr_views_handler_sort',
@@ -178,12 +163,8 @@ function apachesolr_views_views_data() {
     'title' => t('Updated date'),
     'help' => t('The date the node was last updated.'),
     'field' => array(
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_date',
       'click sortable' => TRUE,
-      'apachesolr base handler' => array(
-        'table' => 'node',
-        'field' => 'changed',
-      ),
     ),
     'sort' => array(
       'handler' => 'apachesolr_views_handler_sort',
@@ -196,12 +177,8 @@ function apachesolr_views_views_data() {
       'handler' => 'apachesolr_views_handler_argument_node_type',
     ),
     'field' => array(
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_node_type',
       'click sortable' => TRUE,
-      'apachesolr base handler' => array(
-        'table' => 'node',
-        'field' => 'type',
-      ),
     ),
     'filter' => array(
       'handler' => 'apachesolr_views_handler_filter_type',
@@ -213,20 +190,10 @@ function apachesolr_views_views_data() {
   $data['apachesolr']['name'] = array(
     'title' => t('Author'),
     'help' => t("The node's author."),
-    'argument' => array(
-      'handler' => 'apachesolr_views_handler_argument',
-    ),
     'field' => array(
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_user',
       'click sortable' => TRUE,
       'additional fields' => array('uid'),
-      'apachesolr base handler' => array(
-        'table' => 'users',
-        'field' => 'name',
-      ),
-    ),
-    'filter' => array(
-      'handler' => 'apachesolr_views_handler_filter_author',
     ),
     'sort' => array(
       'handler' => 'apachesolr_views_handler_sort',
@@ -239,27 +206,17 @@ function apachesolr_views_views_data() {
       'handler' => 'apachesolr_views_handler_argument',
     ),
     'field' => array(
-      'name field' => 'name',
       'numeric' => TRUE,
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_user',
       'click sortable' => TRUE,
-      'apachesolr base handler' => array(
-        'table' => 'users',
-        'field' => 'uid',
-      ),
     ),
   );
   $data['apachesolr']['body'] = array(
     'title' => t('Body'),
     'help' => t("The node's content."),
     'field' => array(
-      'handler' => 'apachesolr_views_handler_field_generic',
-      'click sortable' => FALSE,
-      'element type' => 'div',
-      'apachesolr base handler' => array(
-        'table' => 'node_revisions',
-        'field' => 'body',
-      ),
+      'handler' => 'views_handler_field_markup',
+      'format' => 'format',
     ),
   );
   $data['apachesolr']['comment_count'] = array(
@@ -267,12 +224,8 @@ function apachesolr_views_views_data() {
     'help' => t('The number of comments that were posted to the node.'),
     'field' => array(
       'numeric' => TRUE,
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
-      'apachesolr base handler' => array(
-        'table' => 'node_comment_statistics',
-        'field' => 'comment_count',
-      ),
     ),
     'sort' => array(
       'handler' => 'apachesolr_views_handler_sort',
@@ -288,26 +241,7 @@ function apachesolr_views_views_data() {
       ),
     );
   }
-  if (module_exists('translation')) {
-    $data['apachesolr']['language'] = array(
-      'title' => t('Language'),
-      'help' => t('The language the node is in.'),
-      'argument' => array(
-        'handler' => 'apachesolr_views_handler_argument',
-      ),
-      'field' => array(
-        'handler' => 'apachesolr_views_handler_field_generic',
-        'click sortable' => TRUE,
-        'apachesolr base handler' => array(
-          'table' => 'node',
-          'field' => 'language',
-        ),
-      ),
-      'sort' => array(
-        'handler' => 'apachesolr_views_handler_sort',
-      ),
-    );
-  }
+  // @TODO: handle language field.
   
   $data['apachesolr']['text'] = array(
     'title' => t('Search'),
@@ -337,14 +271,9 @@ function apachesolr_views_views_data() {
       'handler' => 'apachesolr_views_handler_sort',
     ),
     'field' => array(
-      'handler' => 'apachesolr_views_handler_field_generic',
+      'handler' => 'views_handler_field_numeric',
       'click sortable' => FALSE,
-      'element type' => 'div',
-      'apachesolr base handler' => array(
-        'table' => 'node_comment_statistics',
-        'field' => 'comment_count',
-      ),
-    )
+    ),
   );
   
   // snippet field

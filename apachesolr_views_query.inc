@@ -390,7 +390,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * definition of this method - when $compat_field is set, $field is ignored
    * and $compat_field used instead.
    */
-  public function add_field($field, $compat_field = NULL) {
+  public function add_field($field, $compat_field = NULL, $alias = '', $params = array()) {
     if (!empty($compat_field)) {
       $field = $compat_field;
     }
@@ -405,7 +405,14 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     }
     return $field;
   }
-  
+
+  /**
+   * Ensure table function.
+   */
+  public function ensure_table($table, $relationship) {
+    return $table;
+  }
+
   /**
    * Add a sorting directive.
    * 
