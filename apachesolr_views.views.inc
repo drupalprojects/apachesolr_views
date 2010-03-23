@@ -343,4 +343,7 @@ function apachesolr_views_views_data() {
 function apachesolr_views_plugins_alter(&$plugins) {
   // Add apachesolr to the base of the node row plugin.
   $plugins['row']['node']['base'][] = 'apachesolr';
+
+  // Add apachesolr to the base of the node_rss row plugin.
+  $plugins['row']['node_rss']['base'][] = 'apachesolr';
 }
