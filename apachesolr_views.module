@@ -29,3 +29,16 @@ function apachesolr_views_theme() {
 function theme_apachesolr_views_term_titles($term_names) {
   return "<span>" . implode('</span> + <span>', $term_names) . "</span>";
 }
+
+/**
+ * Implementation of hook_apachesolr_entities().
+ * This is done for apachesolr_search module.
+ */
+function apachesolr_search_apachesolr_entities() {
+  return array(
+    'node' => array(
+      'name' => 'Node',
+      'base_field' => 'nid',
+    ),
+  );
+}

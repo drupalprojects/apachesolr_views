@@ -11,6 +11,6 @@ class apachesolr_views_handler_field_score extends views_handler_field_numeric {
     $this->definition['float'] = TRUE;
   }
   function query() {
-    $this->field_alias = $this->query->add_field('score');
+    $this->field_alias = $this->query->add_solr_field('score');
   }
 }

@@ -85,30 +85,35 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   // array of boost queries
   protected $_boost_queries = array();
   
-  protected $base_table = 'apachesolr';
+  protected $base_table;
+  protected $sql_base_table;
   
-  protected $base_field = 'nid';
+  protected $base_field;
+
+  protected $_db_query = NULL;
+  protected $has_sql_fields = FALSE;
     
   /**
    * Views init() function
    */
   public function init($base_table, $base_field) {
-    $this->base_table = $base_table;  // Predefine these above, for clarity.
+    $this->base_table = $base_table;
     $this->base_field = $base_field;
+    $this->sql_base_table = substr($base_table, 11);
     $this->_solr_service = apachesolr_get_solr();
+
+    module_load_include('inc', 'views', 'plugins/views_plugin_query_default');
+    $this->_db_query = new views_plugin_query_default;
+    $this->_db_query->init($this->sql_base_table, $base_field);
+
     $this->id = ++self::$idCount;
-  }
-  
-  /**
-   * Constructor build up the avialable sorts
-   */
-  public function __construct() {
-    $data = views_fetch_data('apachesolr');
+
+    $data = views_fetch_data($base_table);
     foreach ($data as $field_name => $field) {
       if (!empty($field['sort'])) {
         $this->_available_sorts[$field_name] = array(
           'name' => $field['title'],
-          'default' => 'asc', // TODO: make this part of the handler def? So it will be in the Views data defintion
+          'default' => 'asc', // TODO: make this part of the handler def? So it will be in the Views data definition
         );
       }
     }
@@ -125,7 +130,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * Build the query object. Load up all avaivable facets so the blocks work.
    */
   public function build(&$view) {
-    $this->init_pager($view);
+    $view->init_pager();
     if ($this->pager->use_pager()) {
       $this->pager->set_current_page($view->current_page);
     }
@@ -336,7 +341,36 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
             }
           }
         }
-        
+
+        $base_fields = array();
+        foreach ($results as $doc) {
+          $base_fields[] = $doc->{$this->base_field};
+        }
+
+        // If there has been SQL fields added via add_field(), run a SQL query.
+        if ($this->has_sql_fields) {
+          $sql_table = $this->_db_query->ensure_table($this->sql_base_table);
+          $replace = array_fill(0, sizeof($base_fields), '%d');
+          $in = '(' . implode(", ", $replace) . ')';
+          $this->_db_query->add_where(0, "$sql_table.{$this->base_field} IN $in", $base_fields);
+          $base_alias = $this->_db_query->add_field($sql_table, $this->base_field);
+
+          $sql_query = $this->_db_query->query();
+          $sql_args = $this->_db_query->get_where_args();
+          $sql_result = db_query($sql_query, $sql_args);
+
+          // Merge results from the SQL query into the $result set.
+          while ($sql_row = db_fetch_object($sql_result)) {
+            foreach ($results as $key => $doc) {
+              if ($doc->{$this->base_field} == $sql_row->{$base_alias}) {
+                foreach ($sql_row as $field => $value) {
+                  $results[$key]->$field = $value;
+                }
+              }
+            }
+          }
+        }
+
         $view->result = $results;
       }
     }
@@ -382,35 +416,44 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   function get_keys() {
     return $this->keys;
   }
-  
+
   /**
-   * Add a field to retrieve.
-   * 
-   * $compat_field is used for compatibility with the views_plugin_query_default
-   * definition of this method - when $compat_field is set, $field is ignored
-   * and $compat_field used instead.
+   * Add a Solr Field to retrieve.
+   *
+   * @param $field
+   *  The name of the field to add.
+   *
+   * @return string
+   *   The field alias.
    */
-  public function add_field($field, $compat_field = NULL, $alias = '', $params = array()) {
-    if (!empty($compat_field)) {
-      $field = $compat_field;
-    }
-    if (is_array($field) && isset($field['field'])) {
-      $field = $field['field'];
-    }
-    if (empty($field) || !is_string($field)) {
-      return FALSE;
-    }
+  public function add_solr_field($field) {
     if (!in_array($field, $this->_used_fields)) {
       $this->_used_fields[] = $field;
     }
     return $field;
+  }
+  
+  /**
+   * Add a field to retrieve.
+   */
+  public function add_field($table, $field, $alias = '', $params = array()) {
+    $this->has_sql_fields = TRUE;
+    return $this->_db_query->add_field($table, $field, $alias, $params);
   }
 
   /**
    * Ensure table function.
    */
   public function ensure_table($table, $relationship) {
-    return $table;
+    if ($table != $this->base_table) {
+      if (substr($table, 0, strlen($this->base_table)) == $this->base_table) {
+        $real_table = substr($table, strlen($this->base_table) + 1);
+      }
+      else {
+        $real_table = $table;
+      }
+      return $this->_db_query->ensure_table($real_table, $relationship);
+    }
   }
 
   /**
@@ -490,6 +533,13 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    */
   public function get_query_basic() {
     return $this->_query;
+  }
+
+  /**
+   * Remove the keys from the query.
+   */
+  public function remove_keys() {
+    $this->_query = '';
   }
   
   /**
@@ -904,7 +954,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         $query_filters[] = "$type_string:" . $definition['value'];
       }
     }
-    
+    $query_filters[] = "entity:" . $this->sql_base_table;
     return $query_filters;
   }
 }
