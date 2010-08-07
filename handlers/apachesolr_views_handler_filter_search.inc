@@ -17,7 +17,11 @@ class apachesolr_views_handler_filter_search extends views_handler_filter_search
    * Validate the options form.
    */
   function exposed_validate($form, &$form_state) {
-    // @TODO decide what we want to do here if anything
+    // Don't let Views do anything if the operator is required and nothing has
+    // been supplied in the exposed form.
+    if (empty($form_state['values'][$this->options['expose']['identifier']]) && $this->options['operator'] == 'required') {
+      $this->view->executed = TRUE;
+    }
   }
   
 }
