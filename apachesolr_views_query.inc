@@ -671,11 +671,12 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * Whether or not the provided argument could be in a facet block
    */
   protected function part_of_facet_block($argument) {
-    $facet_arguments = array(
-      'tid',
-      'type',
-      'uid',
-    );
+    foreach (apachesolr_get_enabled_facets() as $module => $module_facets) {
+      foreach($module_facets as $delta => $facet_field) {
+        $facet_arguments[] = $facet_field;
+      }
+    }
+
     // we use field instead of real_field
     // because we want these specific ones defined in
     // apachesolr_views.views.inc
