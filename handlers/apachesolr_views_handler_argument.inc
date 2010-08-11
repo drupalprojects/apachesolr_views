@@ -18,13 +18,14 @@ class apachesolr_views_handler_argument extends views_handler_argument {
       $this->value = array($this->argument);
     }
     foreach ($this->value as $facet_value) {
-      $this->query->add_filter($this->real_field, apachesolr_views_query::escape_term($facet_value));
+      $this->query->add_filter($this->real_field, apachesolr_views_query::escape_term($facet_value), $this->options['not']);
     }
   }
 
   function option_definition() {
     $options = parent::option_definition();
     $options['break_phrase'] = array('default' => FALSE);
+    $options['not'] = array('default' => FALSE);
 
     return $options;
   }
@@ -38,6 +39,13 @@ class apachesolr_views_handler_argument extends views_handler_argument {
       '#title' => t('Allow multiple terms per argument.'),
       '#description' => t('If selected, users can enter multiple arguments in the form of 1,2,3.'),
       '#default_value' => !empty($this->options['break_phrase']),
+    );
+
+    $form['not'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Exclude the argument'),
+      '#description' => t('If selected, the numbers entered in the argument will be excluded rather than limiting the view.'),
+      '#default_value' => !empty($this->options['not']),
     );
   }
   
