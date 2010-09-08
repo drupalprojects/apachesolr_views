@@ -11,7 +11,7 @@ class apachesolr_views_handler_argument_node_type extends apachesolr_views_handl
   }
 
   function node_type($type) {
-    $output = node_get_types('name', $type);
+    $output = node_type_get_name($type);
     if (empty($output)) {
       return t('Unknown node type');
     }

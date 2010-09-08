@@ -101,7 +101,7 @@ function apachesolr_views_views_plugins() {
         'uses options' => TRUE,
         'base' => array('apachesolr'),
         'parent' => 'time',
-        //'help topic' => 'apachesolr-cache-time', // TODO!!!
+        // 'help topic' => 'apachesolr-cache-time', // TODO!!!
       ),
     ),
   );
@@ -115,7 +115,7 @@ function apachesolr_views_views_data() {
   foreach (module_invoke_all('apachesolr_entities') as $base_table => $definition) {
     $name = $definition['name'];
     $base_field = $definition['base_field'];
-    $data['apachesolr_' . $base_table]['table']['group']  = t('Apache Solr');
+    $data['apachesolr_' . $base_table]['table']['group'] = t('Apache Solr');
 
     $data['apachesolr_' . $base_table]['table']['base'] = array(
       'query class' => 'apachesolr_views_query',
@@ -204,7 +204,7 @@ function apachesolr_views_views_data() {
       );
     }
     // @TODO: handle language field.
-  
+
     $data['apachesolr_' . $base_table]['text'] = array(
       'title' => t('Search'),
       'help' => t('Searches the content with Solr'),
@@ -212,8 +212,9 @@ function apachesolr_views_views_data() {
         'handler' => 'apachesolr_views_handler_filter_search',
       ),
     );
-  
-    // score field. Useful for when combining sorts. So you sort by score, creation etc.
+
+    // score field. Useful for when combining sorts.
+    // So you sort by score, creation etc.
     $data['apachesolr_' . $base_table]['score'] = array(
       'title' => t('Search Score'),
       'help' => t('The score of the search for this item. When no sorts are present this is the default sort'),
@@ -221,10 +222,10 @@ function apachesolr_views_views_data() {
         'handler' => 'apachesolr_views_handler_sort',
       ),
       'field' => array(
-        'handler' => 'apachesolr_views_handler_field_score'
+        'handler' => 'apachesolr_views_handler_field_score',
       ),
     );
-  
+
     // comment_count field useful for sorting
     $data['apachesolr_' . $base_table]['comment_count'] = array(
       'title' => t('Comment Count'),
@@ -237,7 +238,7 @@ function apachesolr_views_views_data() {
         'click sortable' => FALSE,
       ),
     );
-  
+
     // snippet field
     $data['apachesolr_' . $base_table]['snippet'] = array(
       'title' => t('Search Snippet'),
@@ -253,7 +254,7 @@ function apachesolr_views_views_data() {
         'handler' => 'apachesolr_views_handler_argument_mlt',
       ),
     );
-  
+
     // node access
     if (module_exists('apachesolr_nodeaccess')) {
       $data['apachesolr_' . $base_table]['access'] = array(
@@ -264,7 +265,7 @@ function apachesolr_views_views_data() {
         ),
       );
     }
-  
+
     $data['apachesolr_' . $base_table]['promote'] = array(
       'title' => t('Promoted to Front Page'),
       'help' => t('Whether or not this node was promoted to the front page'),
@@ -274,29 +275,31 @@ function apachesolr_views_views_data() {
         'type' => 'yes-no',
       ),
     );
-  
+
     // provide CCK mappings filters
-    foreach (apachesolr_cck_fields() as $name => $field) {
-      // TODO: can we make use of CCK's mapping already and just override
-      // the query part???
-      $options = content_allowed_values(content_fields($field['field_name']));
-      if (!empty($options)) {
-        $data['apachesolr_' . $base_table][apachesolr_index_key($field)] = array(
-          'title' => t($field['label']),
-          'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
-          'filter' => array(
-            'handler' => 'apachesolr_views_handler_optionwidget_filter',
-            'cck_field' => $field,
-          ),
-          'argument' => array(
-            'handler' => 'apachesolr_views_handler_argument_optionwidget',
-            'cck_field' => $field,
-          ),
-        );
+    if (function_exists('apachesolr_node_fields')) {
+      foreach (apachesolr_node_fields() as $name => $fieldInfo) {
+        $field = $fieldInfo['field'];
+        $label = (isset($field['label'])) ? $field['label'] : $field['field_name'];
+        $options = module_invoke($field['module'], 'allowed_values', $field);
+        if (!empty($options)) {
+          $data['apachesolr_' . $base_table][apachesolr_index_key($fieldInfo)] = array(
+            'title' => t($label),
+            'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
+            'filter' => array(
+              'handler' => 'apachesolr_views_handler_optionwidget_filter',
+              'cck_field' => $field,
+            ),
+            'argument' => array(
+              'handler' => 'apachesolr_views_handler_argument_optionwidget',
+              'cck_field' => $field,
+            ),
+          );
+        }
       }
     }
   }
-  
+
   return $data;
 }
 
@@ -323,15 +326,15 @@ function apachesolr_views_views_data_alter(&$data) {
 
     if (!empty($intersect)) {
       foreach ($intersect as $base_table) {
-        $default_group = $table_definition['table']['group'];
+        $default_group = (isset($table_definition['table']['group'])) ? $table_definition['table']['group'] : NULL;
         foreach ($table_definition as $database_field => $definition) {
           if ($database_field != 'table' && isset($definition['field'])) {
             if (!isset($definition['group'])) {
               $definition['group'] = $default_group;
             }
 
-            // Only allow title, help, group and field keys. Filters and sorts are
-            // not doable.
+            // Only allow title, help, group and field keys.
+            // Filters and sorts are not doable.
             foreach (array('title', 'help', 'group', 'field') as $allowed_key) {
               if ( isset($definition[$allowed_key])) {
                 $new_tables['apachesolr_' . $base_table . '_' . $table][$database_field][$allowed_key] = $definition[$allowed_key];

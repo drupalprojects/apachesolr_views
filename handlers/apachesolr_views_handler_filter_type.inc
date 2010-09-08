@@ -1,23 +1,22 @@
 <?php
-
 // $Id$
 
 /**
 * Class for filtering by type.
 */
 class apachesolr_views_handler_filter_type extends views_handler_filter_in_operator {
- 
+
   public function get_value_options() {
     if (!isset($this->value_options)) {
       $this->value_title = t('Node type');
-      $types = node_get_types();
+      $types = node_type_get_types();
       foreach ($types as $type => $info) {
         $options[$type] = $info->name;
       }
       $this->value_options = $options;
     }
   }
-  
+
   /**
    * Provide inclusive/exclusive matching
    * TODO: cannot handle exlusive currently
@@ -31,6 +30,7 @@ class apachesolr_views_handler_filter_type extends views_handler_filter_in_opera
   }
 
   public function query() {
+    $filter = NULL;
     if (empty($this->value) && ($this->options['exposed'] && empty($this->options['expose']['optional']))) {
       // Add term that will yield no results
       $this->query->add_filter('nid', apachesolr_views_query::escape_term('-1'));
@@ -43,7 +43,7 @@ class apachesolr_views_handler_filter_type extends views_handler_filter_in_opera
        * This works, but breaks the facet blocks
        * $this->query->add_filter($this->real_field, substr($filter, 3));
        */
-      
+
       $this->get_value_options();
       foreach ($this->value_options as $type => $name) {
         if (!in_array($type, $this->value)) {

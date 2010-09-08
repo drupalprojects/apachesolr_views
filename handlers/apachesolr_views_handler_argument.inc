@@ -1,12 +1,11 @@
 <?php
-
 // $Id$
 
 /**
  * Class that allows searching the site with Apache Solr through a view.
  */
 class apachesolr_views_handler_argument extends views_handler_argument {
-  
+
   /**
    * Add argument to query.
    */
@@ -29,7 +28,7 @@ class apachesolr_views_handler_argument extends views_handler_argument {
 
     return $options;
   }
-  
+
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
 
@@ -48,7 +47,7 @@ class apachesolr_views_handler_argument extends views_handler_argument {
       '#default_value' => !empty($this->options['not']),
     );
   }
-  
+
   /**
    * Provide a list of default behaviors for this argument if the argument
    * is not present.
@@ -90,5 +89,5 @@ class apachesolr_views_handler_argument extends views_handler_argument {
       return $defaults;
     }
   }
-  
+
 }

@@ -6,13 +6,13 @@
  * provides node access filter implementation for apache solr
  */
 class apachesolr_views_handler_filter_node_access extends views_handler_filter_node_access {
-  
+
   /**
    * Override query().
    */
   function query() {
     try {
-      $subquery = _apachesolr_nodeaccess_build_subquery($GLOBALS['user']);
+      $subquery = apachesolr_nodeaccess_build_subquery($GLOBALS['user']);
     }
     catch (Exception $e) {
       $query = NULL;

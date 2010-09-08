@@ -1,5 +1,4 @@
 <?php
-
 // $Id$
 
 /**
@@ -61,15 +60,19 @@ class apachesolr_views_handler_field_snippet extends views_handler_field {
     $this->query->set_param('hl.simple.pre', '<' . $this->options['tag'] . '>');
     $this->query->set_param('hl.simple.post', '</' . $this->options['tag'] . '>');
   }
-  
+
   function render($doc) {
     $response = apachesolr_static_response_cache();
     $hl_fl = $this->query->get_param('hl.fl');
     if (is_null($hl_fl)) {
       $hl_fl = 'body';
     }
-    $snippet = isset($response->highlighting->{$doc->id}->$hl_fl) ? theme('apachesolr_search_snippets', $doc, $response->highlighting->{$doc->id}->$hl_fl) : $doc->body;
-    
+
+    $snippet = $doc->body;
+    if (isset($response->highlighting->{$doc->id}->$hl_fl)) {
+      theme('apachesolr_search_snippets', array('doc' => $doc, 'snippets' => $response->highlighting->{$doc->id}->$hl_fl));
+    }
+
     return $snippet;
   }
 }

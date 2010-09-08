@@ -1,7 +1,8 @@
 <?php
 // $Id$
+
 class apachesolr_views_handler_argument_mlt extends views_handler_argument_numeric {
-  
+
   /**
    * Override option_definition() to provide defaults
    */
@@ -13,7 +14,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
     $options['mlt_minwl'] = array('default' => '3');
     $options['mlt_maxwl'] = array('default' => '15');
     $options['mlt_maxqt'] = array('default' => '30');
-    
+
     // type
     $options['type'] = array('default' => 'node');
     return $options;
@@ -29,7 +30,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
 
     // TODO: can we exclude this argument??
     unset($form['not']);
-    
+
     $form['type'] = array(
       '#type' => 'select',
       '#title' => t('Object type'),
@@ -48,13 +49,13 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
     $form['mlt_fl'] = array('#type' => 'fieldset', '#tree' => TRUE, '#title' => t('Fields') );
     foreach ($mlt_fields as $key => $description) {
        $form['mlt_fl'][$key] = array(
-	 '#type' => 'select',
-	 '#options' => $weights,
-	 '#title' => $description,
-	 '#default_value' => isset($this->options['mlt_fl'][$key]) ? $this->options['mlt_fl'][$key] : '0',
+      	 '#type' => 'select',
+      	 '#options' => $weights,
+      	 '#title' => $description,
+      	 '#default_value' => isset($this->options['mlt_fl'][$key]) ? $this->options['mlt_fl'][$key] : '0',
       );
     }
-   
+
     $options = drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7));
     $form['mlt_mintf'] = array(
       '#type' => 'select',
@@ -92,7 +93,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
       '#default_value' => $this->options['mlt_maxqt'],
     );
   }
-  
+
   /**
    * Override query().
    */
@@ -108,7 +109,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
     );
     $this->query->change_query_template('mlt');
     $mlt = array();
-    $field_boosts = array(); 
+    $field_boosts = array();
     // Set the boosts for each selected field.
     foreach (array_filter($this->options['mlt_fl']) as $field => $boost) {
       $mlt[] = $field;
@@ -117,7 +118,7 @@ class apachesolr_views_handler_argument_mlt extends views_handler_argument_numer
 
     $this->query->set_param('mlt.fl', implode(',', $mlt));
     $this->query->set_param('mlt.qf', $field_boosts);
-    
+
     // now set the configuration options for the calculation
     foreach ($mlt_specific_options as $form_key => $option_name) {
       if (!empty($this->options[$form_key])) {

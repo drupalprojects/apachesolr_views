@@ -4,7 +4,7 @@
  * @file
  * provides Views caching plugin for solr
  */
-class apachesolr_views_plugin_cache_time extends views_plugin_cache_time {
+class apachesolr_views_plugin_cache_time extends views_plugin_cache_time implements DrupalCacheInterface {
   /**
    * Save data to the cache.
    *
@@ -40,7 +40,8 @@ class apachesolr_views_plugin_cache_time extends views_plugin_cache_time {
     $cutoff = $this->cache_expire($type);
     switch ($type) {
       case 'query':
-        // Currently not supported in base class. but we send it up in case it is
+        // Currently not supported in base class.
+        // but we send it up in case it is
         return parent::cache_get($type);
       case 'results':
         // Values to set: $view->result, $view->total_rows, $view->execute_time,

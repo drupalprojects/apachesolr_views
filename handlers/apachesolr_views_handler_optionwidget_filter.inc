@@ -1,25 +1,29 @@
 <?php
 // $Id$
+
 class apachesolr_views_handler_optionwidget_filter extends views_handler_filter {
   /**
    * override query
    */
   function query() {
-    $this->query->add_filter($this->real_field, $this->value);
+    // TODO: Is this really always a array with only one value?
+    if (property_exists($this, 'value') && !empty($this->value)) {
+      $value = reset($this->value);
+      $this->query->add_filter($this->real_field, $value);
+    }
   }
-  
+
   /**
    * Provide a simple textfield for equality
    */
   function value_form(&$form, &$form_state) {
-    // parent::value_form doesn't return anything
-    // SIGH! definition['cck_field'] doesn't have 'allowed_values'
-    $options = content_allowed_values(content_fields($this->definition['cck_field']['field_name']));
+    $options = module_invoke($this->definition['cck_field']['module'], 'allowed_values', $this->definition['cck_field']);
     $form['value'] = array(
       '#type' => 'select',
-      '#title' => t($this->definition['cck_field']['label']),
+      '#title' => t($this->definition['title']),
       '#options' => $options,
       '#default_value' => $this->value,
     );
+    xdebug_break();
   }
 }
