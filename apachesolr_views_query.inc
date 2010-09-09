@@ -598,7 +598,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
    * return the search path
    */
   function get_path($new_keys = NULL) {
-    if (isset($new_keys)) {
+    if (!empty($new_keys)) {
       $this->set_query($new_keys);
     }
     $wildcard_count = 0; // this is used to remove the some/path/argument/all/all paths
@@ -676,6 +676,9 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         $facet_arguments[] = $facet_field;
       }
     }
+
+    // Facets are IM_* where as arguement are tid so this is a quick fix
+    if ((!empty($facet_arguments)) && ($argument->field == "tid")) return true;
 
     // we use field instead of real_field
     // because we want these specific ones defined in
