@@ -16,14 +16,14 @@ class apachesolr_views_handler_sort extends views_handler_sort {
       'name' => 'sort_name',
       'title' => 'sort_title',
     );
+
     $order = strtolower($this->options['order']);
+    $field = empty($special_sort_fields[$this->real_field]) ? $this->real_field : $special_sort_fields[$this->real_field];
+    $exposed_data = $this->view->exposed_data;
+    $handler = $this->view->sort[$exposed_data['sort_by']];
     
-    if (empty($special_sort_fields[$this->real_field])) {
-      $this->query->add_sort($this->real_field, $order);
-    }
-    else {
-      $this->query->add_sort($special_sort_fields[$this->real_field], $order);
-    }
+    $this->query->add_sort($field, $order, !empty($handler->options['exposed']));
+
   }
   
 }

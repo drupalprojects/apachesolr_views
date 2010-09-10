@@ -96,7 +96,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   /**
    * Views init() function
    */
-  public function init($base_table, $base_field) {
+  public function init($base_table, $base_field, $options) {
     $this->base_table = $base_table;
     $this->base_field = $base_field;
     $this->sql_base_table = substr($base_table, 11);
@@ -104,7 +104,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
 
     module_load_include('inc', 'views', 'plugins/views_plugin_query_default');
     $this->_db_query = new views_plugin_query_default;
-    $this->_db_query->init($this->sql_base_table, $base_field);
+    $this->_db_query->init($this->sql_base_table, $base_field, $options);
 
     $this->id = ++self::$idCount;
 
@@ -265,11 +265,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       $this->_params['fl'] = implode(',', $this->_used_fields);
       
       // build up the sorts here
-      $sort_strings = array();
-      foreach ($this->_sorts as $name => $direction) {
-        $sort_strings[] = "$name $direction";
-      }
-      $this->_params['sort'] = implode(',', $sort_strings);
+      $this->_params['sort'] = implode(',', $this->get_solrsort());
       
       // query template handling
       if (!empty($this->_query_template)) {
@@ -466,7 +462,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       $this->_sorts = array();
     }
     // don't need drupal_strtolower, this isn't a UTF-8 string
-    $this->_sorts[$field] = strtolower($order);
+    $this->_sorts[] = $field . ' ' . strtolower($order);
   }
   
   /**
