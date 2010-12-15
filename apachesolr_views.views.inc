@@ -53,6 +53,9 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_field_snippet' => array(
         'parent' => 'views_handler_field',
       ),
+      'apachesolr_views_handler_filter_tid' => array(
+        'parent' => 'views_handler_filter_term_node_tid',
+      ),
       'apachesolr_views_handler_optionwidget_filter' => array(
         'parent' => 'views_handler_filter',
       ),
@@ -206,6 +209,9 @@ function apachesolr_views_views_data() {
         'help' => t('Taxonomy terms associated with the node.'),
         'argument' => array(
           'handler' => 'apachesolr_views_handler_argument_tid',
+        ),
+        'filter' => array(
+          'handler' => 'apachesolr_views_handler_filter_tid',
         ),
       );
     }
