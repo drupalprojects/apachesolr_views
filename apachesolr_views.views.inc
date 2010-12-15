@@ -28,6 +28,9 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_argument_tid' => array(
         'parent' => 'apachesolr_views_handler_argument',
       ),
+      'apachesolr_views_handler_argument_number_decimal' => array(
+        'parent' => 'views_handler_argument_numeric',
+      ),
       'apachesolr_views_handler_argument_search' => array(
         'parent' => 'apachesolr_views_handler_argument',
       ),
@@ -237,6 +240,18 @@ function apachesolr_views_views_data() {
         ),
       );
     }
+
+    $data['apachesolr_' . $base_table]['sticky'] = array(
+      'title' => t('Sticky'),
+      'help' => t("Sort and filter by a node's sticky flag."),
+      'sort' => array(
+        'handler' => 'apachesolr_views_handler_sort',
+      ),
+      'filter' => array(
+        'handler' => 'apachesolr_views_handler_filter_boolean',
+      ),
+    );
+
     // @TODO: handle language field.
   
     $data['apachesolr_' . $base_table]['text'] = array(
@@ -244,6 +259,9 @@ function apachesolr_views_views_data() {
       'help' => t('Searches the content with Solr'),
       'filter' => array(
         'handler' => 'apachesolr_views_handler_filter_search',
+      ),
+      'argument' => array(     
+        'handler' => 'apachesolr_views_handler_argument_search',     
       ),
     );
   
@@ -308,6 +326,16 @@ function apachesolr_views_views_data() {
         'type' => 'yes-no',
       ),
     );
+
+    $data['apachesolr_' . $base_table]['status'] = array(
+      'title' => t('Published'),
+      'help' => t('Whether or not this node has been published'),
+      'filter' => array(
+        'handler' => 'apachesolr_views_handler_filter_boolean',
+        'label' => t('Published'),
+        'type' => 'yes-no',
+      ),
+    );
   
     // provide CCK mappings filters
     foreach (apachesolr_cck_fields() as $name => $field) {
@@ -328,9 +356,18 @@ function apachesolr_views_views_data() {
             'cck_field' => $field,
           ),
         ); // end: array
+      }
+      elseif ($field['type'] == 'number_decimal') {
+        $data['apachesolr_' . $base_table][apachesolr_index_key($field)] = array(
+          'title' => t($field['widget']['label']),
+          'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
+          'argument' => array(
+            'handler' => 'apachesolr_views_handler_argument',
+          ),
+        );
       } // end: if
-    } // end: foreach
-  } // end: foreach
+    }
+  }
   
   return $data;
 }
@@ -358,7 +395,7 @@ function apachesolr_views_views_data_alter(&$data) {
 
     if (!empty($intersect)) {
       foreach ($intersect as $base_table) {
-        $default_group = $table_definition['table']['group'];
+        isset($table_definition['table']['group']) ? $default_group = $table_definition['table']['group']:$default_group = '';
         foreach ($table_definition as $database_field => $definition) {
           if ($database_field != 'table' && isset($definition['field'])) {
             if (!isset($definition['group'])) {
@@ -367,10 +404,15 @@ function apachesolr_views_views_data_alter(&$data) {
 
             // Only allow title, help, group and field keys. Filters and sorts are
             // not doable.
-            foreach (array('title', 'help', 'group', 'field') as $allowed_key) {
+            foreach (array('title', 'help', 'field') as $allowed_key) {
               if ( isset($definition[$allowed_key])) {
                 $new_tables['apachesolr_' . $base_table . '_' . $table][$database_field][$allowed_key] = $definition[$allowed_key];
               }
+            }
+
+            // Make separate groups for the Apache Solr fields
+            if (isset($definition['group'])) {
+              $new_tables['apachesolr_' . $base_table . '_' . $table][$database_field]['group'] = 'Apache Solr '. $definition['group'];
             }
 
             // Add to the new_tables. This will be merged into data at the end.
