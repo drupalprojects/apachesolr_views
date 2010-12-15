@@ -303,7 +303,7 @@ function apachesolr_views_views_data() {
       // the query part???
       $options = content_allowed_values(content_fields($field['field_name']));
       if (!empty($options)) {
-        $label = (isset($field['label'])) ? t($field['label']) : '';
+        $label = (isset($field['widget']['label'])) ? t($field['widget']['label']) : '';
         $data['apachesolr_' . $base_table][apachesolr_index_key($field)] = array(
           'title' => $label,
           'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
@@ -315,10 +315,10 @@ function apachesolr_views_views_data() {
             'handler' => 'apachesolr_views_handler_argument_optionwidget',
             'cck_field' => $field,
           ),
-        );
-      }
-    }
-  }
+        ); // end: array
+      } // end: if
+    } // end: foreach
+  } // end: foreach
   
   return $data;
 }
