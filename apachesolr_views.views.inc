@@ -281,8 +281,9 @@ function apachesolr_views_views_data() {
       // the query part???
       $options = content_allowed_values(content_fields($field['field_name']));
       if (!empty($options)) {
+        $label = (isset($field['label'])) ? t($field['label']) : '';
         $data['apachesolr_' . $base_table][apachesolr_index_key($field)] = array(
-          'title' => t($field['label']),
+          'title' => $label,
           'help' => t('CCK Mapping for @fieldname', array('@fieldname' => $field['field_name'])),
           'filter' => array(
             'handler' => 'apachesolr_views_handler_optionwidget_filter',
