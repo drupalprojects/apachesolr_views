@@ -35,6 +35,9 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_field' => array(
         'parent' => 'views_handler_field_node',
       ),
+      'apachesolr_views_handler_field_title' => array(
+        'parent' => 'views_handler_field_node',
+      ),
       'apachesolr_views_handler_field_author' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
@@ -143,6 +146,13 @@ function apachesolr_views_views_data() {
     $data['apachesolr_' . $base_table]['title'] = array(
       'title' => t('Title'),
       'help' => t('The title of the node.'),
+      'field' => array(
+        'handler' => 'apachesolr_views_handler_field_title',
+        'click sortable' => TRUE,
+      ),
+      'filter' => array(
+        'handler' => 'apachesolr_views_handler_filter_single',
+      ),
       'argument' => array(
         'handler' => 'apachesolr_views_handler_argument',
       ),
