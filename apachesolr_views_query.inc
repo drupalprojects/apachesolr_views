@@ -344,7 +344,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         }
 
         // If there has been SQL fields added via add_field(), run a SQL query.
-        if ($this->has_sql_fields) {
+        if ($this->has_sql_fields && !empty($base_fields)) {
           $sql_table = $this->_db_query->ensure_table($this->sql_base_table);
           $replace = array_fill(0, sizeof($base_fields), '%d');
           $in = '(' . implode(", ", $replace) . ')';
