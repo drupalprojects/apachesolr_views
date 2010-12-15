@@ -162,7 +162,12 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         $solr = apachesolr_get_solr();
         $total = 0;
         if (isset($solr)) {
-          $data = $solr->getLuke();
+          try {
+            $data = $solr->getLuke();
+          }
+          catch (Exception $e) {
+            watchdog('apachesolr_views', $e->getMessage());
+          }
           if (isset($data) && isset($data->index->numDocs)) {
             $total = $data->index->numDocs;
           }
