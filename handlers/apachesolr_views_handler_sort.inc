@@ -11,7 +11,7 @@ class apachesolr_views_handler_sort extends views_handler_sort {
    * Places the sort into the search parameters.
    */
   public function query() {
-    /* These fields have a special "*_sort" field for sorting: */
+    /* These fields have a special "sort_*" field for sorting: */
     $special_sort_fields = array(
       'name' => 'sort_name',
       'title' => 'sort_title',
