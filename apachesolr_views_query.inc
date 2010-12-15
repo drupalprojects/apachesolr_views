@@ -823,6 +823,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     if (strpos($term, ' TO ') !== FALSE) {
       return $term;
     }
+
     if (strpos($term, ' ') !== FALSE) {
       return Drupal_Apache_Solr_Service::phrase($term);
     }
