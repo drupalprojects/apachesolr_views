@@ -47,6 +47,10 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_field_taxonomy' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
+      // Provide tid filtering to apache solr views
+      'apachesolr_views_handler_field_tid' => array(
+        'parent' => 'views_handler_field',
+      ),
       'apachesolr_views_handler_field_type' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
@@ -217,6 +221,15 @@ function apachesolr_views_views_data() {
       $data['apachesolr_' . $base_table]['tid'] = array(
         'title' => t('Taxonomy terms'),
         'help' => t('Taxonomy terms associated with the node.'),
+        'field' => array(
+          'handler' => 'apachesolr_views_handler_field_tid',
+          'numeric' => TRUE,
+          'click sortable' => TRUE,
+          'apachesolr base handler' => array(
+            'table' => 'term_node',
+            'field' => 'tid',
+          ),
+        ),
         'argument' => array(
           'handler' => 'apachesolr_views_handler_argument_tid',
         ),
