@@ -688,6 +688,10 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     if (!empty($new_keys)) {
       $this->set_query($new_keys);
     }
+    // Set the base path of the view to the current url - for an embedded view
+    if (empty($this->_base_path)) {
+      $this->_base_path = drupal_get_path_alias(implode('/', arg()));
+    }
     $wildcard_count = 0; // this is used to remove the some/path/argument/all/all paths
     if (empty($this->_view_arguments)) {
       return $this->_base_path;
