@@ -678,7 +678,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       }
     }
 
-    // Facets are IM_* where as arguement are tid so this is a quick fix
+    // Facets are IM_* where as argument are tid so this is a quick fix
     if ((!empty($facet_arguments)) && ($argument->field == "tid")) return true;
 
     // we use field instead of real_field
