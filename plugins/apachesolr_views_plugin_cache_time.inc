@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * provides Views caching plugin for solr

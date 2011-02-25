@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * generic filter for Apache Solr

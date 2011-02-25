@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 // TODO: Spellchecker field? What todo about spellchecker...
 

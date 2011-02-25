@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 class apachesolr_views_handler_argument_mlt extends views_handler_argument_numeric {
 
