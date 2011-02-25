@@ -1,6 +1,5 @@
 <?php
 
-/* $Id$ */
 
 /**
  * Class for retrieving and rendering an arbitrary field from an Apache Solr

@@ -1,6 +1,5 @@
 <?php
 
-/* $Id$ */
 
 /**
  * Class that allows searching the site with Apache Solr through a view.

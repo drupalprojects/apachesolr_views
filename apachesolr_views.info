@@ -1,4 +1,3 @@
-; $Id$
 name = Apache Solr Views Integration
 description = Provides Views Integration with Views
 dependencies[] = apachesolr

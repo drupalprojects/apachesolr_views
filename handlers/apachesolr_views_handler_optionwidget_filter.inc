@@ -1,5 +1,4 @@
 <?php
-// $Id$
 class apachesolr_views_handler_optionwidget_filter extends views_handler_filter {
   /**
    * override query
