@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Provides a basic handler for boolean fields

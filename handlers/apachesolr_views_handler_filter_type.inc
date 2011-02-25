@@ -1,6 +1,5 @@
 <?php
 
-// $Id$
 
 /**
 * Class for filtering by type.

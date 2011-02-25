@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /*
  * Load files with base classes of the contained classes.

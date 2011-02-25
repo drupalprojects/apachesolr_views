@@ -1,6 +1,5 @@
 <?php
 
-/* $Id$ */
 
 /**
  * Class for sorting for a field.
