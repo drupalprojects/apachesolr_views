@@ -28,6 +28,9 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_argument_tid' => array(
         'parent' => 'apachesolr_views_handler_argument',
       ),
+      'apachesolr_views_handler_argument_search' => array(
+        'parent' => 'apachesolr_views_handler_argument',
+      ),
       'apachesolr_views_handler_field' => array(
         'parent' => 'views_handler_field_node',
       ),
@@ -209,6 +212,9 @@ function apachesolr_views_views_data() {
       'help' => t('Searches the content with Solr'),
       'filter' => array(
         'handler' => 'apachesolr_views_handler_filter_search',
+      ),
+      'argument' => array(     
+        'handler' => 'apachesolr_views_handler_argument_search',     
       ),
     );
   

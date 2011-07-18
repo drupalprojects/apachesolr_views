@@ -652,7 +652,12 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   protected function argument_part($field) {
     $argument_path = '';
     if (empty($this->_facets[$field])) {
-      return '';
+      if ($field == 'text' && !empty($this->_query)) {
+        //the search argument is special
+        return $this->_query;
+      } else {
+        return '';
+      }
     }
     foreach ($this->_facets[$field] as $defintion) {
       if (!$defintion['exclude']) {
