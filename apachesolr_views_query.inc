@@ -60,7 +60,9 @@ class apachesolr_views_query extends views_plugin_query {
 
       // Execute the search.
       $params = array();
-      $params['q'] = isset($this->params['q']) ? $this->params['q'] : '*:*';
+      if (isset($this->params['q'])) {
+        $params['q'] =  $this->params['q'];
+      }
 
       $params['rows'] = $this->pager->options['items_per_page'];
       $params['start'] = $this->pager->current_page * $this->pager->options['items_per_page'];
