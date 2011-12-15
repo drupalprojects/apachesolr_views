@@ -95,7 +95,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
   /**
    * Views init() function
    */
-  public function init($base_table, $base_field) {
+  public function init($base_table, $base_field, $options) {
     $this->base_table = $base_table;
     $this->base_field = $base_field;
     $this->sql_base_table = substr($base_table, 11);
@@ -103,7 +103,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
 
     module_load_include('inc', 'views', 'plugins/views_plugin_query_default');
     $this->_db_query = new views_plugin_query_default;
-    $this->_db_query->init($this->sql_base_table, $base_field);
+    $this->_db_query->init($this->sql_base_table, $base_field, $options);
 
     $this->id = ++self::$idCount;
 
@@ -161,7 +161,13 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
         $solr = apachesolr_get_solr();
         $total = 0;
         if (isset($solr)) {
-          $data = $solr->getLuke();
+          try {
+            $data = $solr->getLuke();
+          }
+          catch (Exception $e) {
+            watchdog('apachesolr_views', $e->getMessage());
+          }
+
           if (isset($data) && isset($data->index->numDocs)) {
             $total = $data->index->numDocs;
           }

@@ -37,6 +37,9 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_field' => array(
         'parent' => 'views_handler_field_node',
       ),
+      'apachesolr_views_handler_field_title' => array(
+        'parent' => 'views_handler_field_node',
+      ),
       'apachesolr_views_handler_field_author' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
@@ -46,6 +49,10 @@ function apachesolr_views_views_handlers() {
       'apachesolr_views_handler_field_taxonomy' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
+      // Provide tid filtering to apache solr views
+      'apachesolr_views_handler_field_tid' => array(
+        'parent' => 'views_handler_field',
+      ),      
       'apachesolr_views_handler_field_type' => array(
         'parent' => 'apachesolr_views_handler_field',
       ),
