@@ -5,28 +5,6 @@
  */
 
 /**
- * Implementation of hook_views_handlers().
- */
-function apachesolr_views_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'apachesolr_views') . '/handlers',
-    ),
-    'handlers' => array(
-      'apachesolr_views_handler_field' => array(
-        'parent' => 'views_handler_field',
-      ),
-      'apachesolr_views_handler_sort' => array(
-        'parent' => 'views_handler_sort',
-      ),
-      'apachesolr_views_handler_filter' => array(
-        'parent' => 'views_handler_filter',
-      ),
-    ),
-  );
-}
-
-/**
  * Implementation of hook_views_plugins().
  */
 function apachesolr_views_views_plugins() {
