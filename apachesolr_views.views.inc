@@ -61,8 +61,15 @@ function apachesolr_views_views_data() {
 //    );
 
     // Get the list of the fields in idex directly from Solr.
-    $solr = apachesolr_get_solr();
-    $solr_fields = $solr->getFields(1);
+    try {
+      $solr = apachesolr_get_solr();
+      $solr_fields = $solr->getFields(1);
+    }
+    catch (Exception $e) {
+      $solr_fields = array();
+      watchdog('Apache Solr Views', nl2br(check_plain($e->getMessage())), NULL, WATCHDOG_ERROR);
+    }
+
     foreach ($solr_fields as $solr_field_name => $solr_field) {
 
       // We do not allow to display 'sort_*' fields.
