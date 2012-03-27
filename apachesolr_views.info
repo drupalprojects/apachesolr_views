@@ -1,7 +1,7 @@
 name = Apache Solr Views Integration
 description = Provides Views Integration with Views
-dependencies[] = apachesolr
+dependencies[] = apachesolr_search
 dependencies[] = views
 package = Apache Solr
 core = "6.x"
-php = 5.1.4
+php = 5.2
