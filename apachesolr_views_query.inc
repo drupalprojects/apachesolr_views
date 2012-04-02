@@ -158,7 +158,7 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
       // now we do boost functions
       if (empty($this->_boost_functions)) {
         $this->_params['bf'] = array();
-        $solr = apachesolr_get_solr();
+        $solr = $this->_solr_service;
         $total = 0;
         if (isset($solr)) {
           try {
@@ -316,6 +316,11 @@ class apachesolr_views_query extends views_plugin_query implements Drupal_Solr_Q
     $this->pager->pre_execute($this->_query, $args);
 
     try {
+      // If no text query is set we set a default of all
+      // @todo Check the execution flow, when does apachesolr modify query get run
+      if(empty($this->_query)) {
+        watchdog('Apachesolr Views', 'Warning, no query string set');
+      } 
       $response = $this->_solr_service->search($this->_query, $this->offset, $this->limit, $this->_params);
       
       $view->total_rows = $total = $response->response->numFound;
