@@ -100,7 +100,8 @@ class apachesolr_views_query extends views_plugin_query {
       }
 
       apachesolr_search_add_boost_params($query);
-      list($final_query, $response) = apachesolr_do_query($query, $this->pager->current_page);
+      $query->page = $this->pager->current_page;
+      list($final_query, $response) = apachesolr_do_query($query);
       apachesolr_has_searched(TRUE);
 
       // This is needed for removing errors in standard field handler.
