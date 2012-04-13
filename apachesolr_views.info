@@ -5,6 +5,7 @@ core = "7.x"
 php = 5.2
 
 dependencies[] = apachesolr
+dependencies[] = apachesolr_search
 dependencies[] = views
 
 files[] = apachesolr_views.module
