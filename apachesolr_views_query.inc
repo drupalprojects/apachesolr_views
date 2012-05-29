@@ -1,7 +1,5 @@
 <?php
 
-// TODO: Spellchecker field? What todo about spellchecker...
-
 /**
  * Class for handling a view that gets its data not from the database, but from
  * a Solr server.
@@ -22,13 +20,8 @@ class apachesolr_views_query extends views_plugin_query {
   protected $errors;
 
   /**
-   * The names of all fields whose value is required by a handler. The format
-   * follows the same as Search API field identifiers (parent:child).
-   *
-   * @var array
+   * Store results of apachesolr search.
    */
-  protected $fields;
-
   protected $apachesolr_results;
 
   public function build(&$view) {
@@ -73,43 +66,37 @@ class apachesolr_views_query extends views_plugin_query {
       }
 
       // Add fields.
+      $params['fl'] = array('id', 'entity_id');
       if (isset($this->params['fl'])) {
-        $params['fl'] = implode(',', $this->params['fl']);
+        $params['fl'] = array_merge($params['fl'], $this->params['fl']);
       }
+      $params['fl'] = implode(',', $params['fl']);
 
       // Add filters to parameters.
       if (isset($this->params['filters'])) {
         $params['fq'] = $this->params['filters'];
       }
 
-      // Add sorting.
-      $solrsort = '';
-      if (isset($this->params['sort'])) {
-        $solrsort = implode(', ', $this->params['sort']);
-      }
-
-      // Load search query and execute it.
+      // Load search query.
       $solr = apachesolr_get_solr();
-      $query = new SolrBaseQuery('apachesolr', $solr, $params, $solrsort, '');
+      $query = new SolrBaseQuery('apachesolr', $solr, $params);
 
-      $params = array(
-        'fl' => array('id', 'entity_id', 'entity_type', 'bundle', 'bundle_name', 'label', 'is_comment_count', 'ds_created', 'ds_changed', 'score', 'path', 'url', 'is_uid', 'tos_name'),
-      );
-      if ($query) {
-        $query->addParams($params);
+      // Add sorting.
+      if (isset($this->params['sort'])) {
+        $query->setAvailableSort($this->params['sort'][0], $this->params['sort'][1]);
+        $query->setSolrsort($this->params['sort'][0], $this->params['sort'][1]);
       }
 
-      apachesolr_search_add_boost_params($query);
+      $query->addParams($params);
+
       $query->page = $this->pager->current_page;
+
+      // Execute search.
       list($final_query, $response) = apachesolr_do_query($query);
       apachesolr_has_searched($solr->getId(), TRUE);
 
-      // This is needed for removing errors in standard field handler.
-      // When we move to our custom field handlers this won't be needed.
-      // @see views_handler_field_field.inc line 600.
-      foreach (apachesolr_search_process_response($response, $final_query) as $result_item) {
-        $view->result[] = (object) $result_item;
-      }
+      // Store results.
+      $view->result = $response->response->docs;
 
       // Store apachesolr cached response.
       $this->apachesolr_response = $response;
@@ -117,7 +104,6 @@ class apachesolr_views_query extends views_plugin_query {
       // Store the results.
       $this->pager->total_items = $view->total_rows = $this->apachesolr_response->response->numFound;
       $this->pager->update_page_info();
-
 
       // We shouldn't use $results['performance']['complete'] here, since
       // extracting the results probably takes considerable time as well.
@@ -148,7 +134,7 @@ class apachesolr_views_query extends views_plugin_query {
   }
 
   public function add_sort($field, $order) {
-    $this->params['sort'][] = $field . ' ' . $order;
+    $this->params['sort'] = array($field, $order);
   }
 
   public function add_parameter($key, $value) {
@@ -158,18 +144,6 @@ class apachesolr_views_query extends views_plugin_query {
   public function add_field($table_alias, $field, $alias = '', $params = array()) {
     if (isset($table_alias[$field])) {
       return $table_alias[$field];
-    }
-  }
-
-  public function ensure_table($table, $relationship) {
-    if ($table == 'node') {
-      return drupal_map_assoc(
-        array('title', 'type',
-            'path', 'path_alias', 'uid', 'name', 'created', 'changed',
-            'last_comment_or_change', 'nid', 'status', 'promote', 'moderate',
-            'sticky', 'tnid', 'translate', 'language', 'comment_count', 'tid',
-            'vid', 'timestamp'
-        ));
     }
   }
 
