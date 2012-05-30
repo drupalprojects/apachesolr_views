@@ -87,7 +87,7 @@ class apachesolr_views_query extends views_plugin_query {
       }
 
       $solr = apachesolr_get_solr($env_id);
-      $query = new SolrBaseQuery('apachesolr', $solr, $params);
+      $query = new ApachesolrViewsSolrBaseQuery('apachesolr', $solr, $params, '', current_path());
 
       // Add sorting.
       if (isset($this->params['sort'])) {
