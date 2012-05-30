@@ -26,8 +26,9 @@ function apachesolr_views_views_plugins() {
  * Implementation of hook_views_data().
  */
 function apachesolr_views_views_data() {
-    $name = apachesolr_default_environment();
-    $apachesolr_base_table = 'apachesolr_' . $name;
+  foreach (apachesolr_load_all_environments() as $env_id => $environment) {
+    $name = $environment['name'];
+    $apachesolr_base_table = 'apachesolr__' . $env_id;
 
     $data[$apachesolr_base_table]['table']['group'] = t('Apache Solr');
     $data[$apachesolr_base_table]['table']['base'] = array(
@@ -36,9 +37,9 @@ function apachesolr_views_views_data() {
       'help' => t('Searches the site with the Apache Solr search engine for @name', array('@name' => $name)),
     );
 
-    // Get the list of the fields in idex directly from Solr.
+    // Get the list of the fields in index directly from Solr.
     try {
-      $solr = apachesolr_get_solr();
+      $solr = apachesolr_get_solr($env_id);
       $solr_fields = $solr->getFields(1);
     }
     catch (Exception $e) {
@@ -69,7 +70,23 @@ function apachesolr_views_views_data() {
           'handler' => 'apachesolr_views_handler_sort',
         ),
       );
+
+      // Default sort field for label.
+      $sort_field_name = ($solr_field_name == 'label') ? 'sort_label' : '';
+      // Check if corresponding sort_ field exists. We remove prefix from field
+      // name (for example prefix "ss_" from "ss_name") and check if "sort_*"
+      // field is available.
+      if (array_key_exists('sort_' . substr($solr_field_name, 2), $solr_fields)) {
+        $sort_field_name = 'sort_' . substr($solr_field_name, 2);
+      }
+      if (!empty($sort_field_name)) {
+        // Use the sort field for click sorting.
+        $data[$apachesolr_base_table][$solr_field_name]['field']['click sort field'] = $sort_field_name;
+        // And use the sort field for explicit sorts.
+        $data[$apachesolr_base_table][$solr_field_name]['sort']['real field'] = $sort_field_name;
+      }
     }
+  }
 
   return $data;
 }

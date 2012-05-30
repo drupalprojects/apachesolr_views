@@ -78,7 +78,15 @@ class apachesolr_views_query extends views_plugin_query {
       }
 
       // Load search query.
-      $solr = apachesolr_get_solr();
+      // Get the Apache Solr "environment id".
+      if (strpos($view->base_table, 'apachesolr__') === 0) {
+        $env_id = substr($view->base_table, 12);
+      }
+      else {
+        $env_id = apachesolr_default_environment();
+      }
+
+      $solr = apachesolr_get_solr($env_id);
       $query = new SolrBaseQuery('apachesolr', $solr, $params);
 
       // Add sorting.
