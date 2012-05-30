@@ -69,6 +69,9 @@ function apachesolr_views_views_data() {
         'sort' => array(
           'handler' => 'apachesolr_views_handler_sort',
         ),
+        'argument' => array(
+          'handler' => 'apachesolr_views_handler_argument',
+        ),
       );
 
       // Default sort field for label.
