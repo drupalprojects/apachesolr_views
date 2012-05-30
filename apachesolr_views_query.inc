@@ -139,7 +139,7 @@ class apachesolr_views_query extends views_plugin_query {
 
   public function add_filter($type, $value, $exclude = FALSE) {
     $exclude_string = ($exclude) ? '-' : '';
-    $this->params['filters'][] = $exclude_string . $type . ':' . $value;
+    $this->params['filters'][] = $exclude_string . $type . ':(' . $value . ')';
   }
 
   public function add_filter_string($string) {
