@@ -99,6 +99,11 @@ class apachesolr_views_query extends views_plugin_query {
 
       $query->page = $this->pager->current_page;
 
+      // Boost parameters if apachesolr_search module is available.
+      if (module_exists('apachesolr_search')) {
+        apachesolr_search_add_boost_params($query);
+      }
+
       // Execute search.
       list($final_query, $response) = apachesolr_do_query($query);
       apachesolr_has_searched($solr->getId(), TRUE);
