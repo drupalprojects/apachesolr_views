@@ -89,6 +89,15 @@ function apachesolr_views_views_data() {
         $data[$apachesolr_base_table][$solr_field_name]['sort']['real field'] = $sort_field_name;
       }
     }
+
+    // Keyword field.
+    $data[$apachesolr_base_table]['keyword'] = array(
+      'title' => t('Search'),
+      'help' => t('Fulltext search'),
+      'filter' => array(
+        'handler' => 'apachesolr_views_keyword_handler_filter',
+      ),
+    );
   }
 
   return $data;
