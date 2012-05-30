@@ -9,7 +9,12 @@ class apachesolr_views_handler_field extends views_handler_field {
   function get_value($values, $field = NULL) {
     $alias = isset($field) ? $this->aliases[$field] : $this->field_alias;
     if (isset($values->{$alias})) {
-      return $values->{$alias};
+      if (is_array($values->{$alias})) {
+        return implode(" ", $values->{$alias});
+      }
+      else {
+        return $values->{$alias};
+      }
     }
   }
 
