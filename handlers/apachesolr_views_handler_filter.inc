@@ -3,18 +3,10 @@
 class apachesolr_views_handler_filter extends views_handler_filter {
   function query() {
     if (!empty($this->value)) {
-      $value = $this->value;
-      $fieldname = $this->field;
-
-      if (is_array($value)) {
-        $values = array_filter($value);
-        // Ensure that some values have been selected.
-        if (!empty($values)) {
-          $this->query->add_filter($fieldname, '(' . implode('OR', $values) . ')');
-        }
-        return;
+      if (is_array($this->value)) {
+        $this->value = implode(' OR ', $this->value);
       }
-      $this->query->add_filter($fieldname, $value);
+      $this->query->add_where($this->options['group'], "$this->real_field", $this->value, $this->operator);
     }
   }
 

@@ -24,6 +24,13 @@ class apachesolr_views_query extends views_plugin_query {
    */
   protected $apachesolr_results;
 
+  /**
+   * Array of where conditions.
+   *
+   * Neede for grouppin of query conditions.
+   */
+  protected $where = array();
+
   public function build(&$view) {
     $view->init_pager();
 
@@ -72,9 +79,12 @@ class apachesolr_views_query extends views_plugin_query {
       }
       $params['fl'] = implode(',', $params['fl']);
 
-      // Add filters to parameters.
-      if (isset($this->params['filters'])) {
-        $params['fq'] = $this->params['filters'];
+      // Add conditions to filter parameter.
+      $conditions = array('conditions' => $this->where, 'type' => $this->group_operator);
+      $conditions_string = $this->build_where_string($conditions);
+
+      if (!empty($conditions_string)) {
+        $params['fq'] = $conditions_string;
       }
 
       // Load search query.
@@ -94,8 +104,6 @@ class apachesolr_views_query extends views_plugin_query {
         $query->setAvailableSort($this->params['sort'][0], $this->params['sort'][1]);
         $query->setSolrsort($this->params['sort'][0], $this->params['sort'][1]);
       }
-
-      $query->addParams($params);
 
       $query->page = $this->pager->current_page;
 
@@ -162,5 +170,68 @@ class apachesolr_views_query extends views_plugin_query {
 
   public function get_params() {
     return $this->params;
+  }
+
+  /**
+   *  Build filter string from where array.
+   */
+  function build_where_string($where) {
+    if (!isset($where['conditions'])) {
+      return $where['field'] . ':(' . $where['value'] . ')';
+    }
+    else {
+      $condition_strings = array();
+      foreach ($where['conditions'] as $condition) {
+        $condition_strings[] = $this->build_where_string($condition);
+      }
+      $condition_strings = array_filter($condition_strings);
+      return implode(' ' . $where['type'] . ' ', $condition_strings);
+    }
+  }
+
+  /**
+   * Support for groupping.
+   *
+   * @see views_plugin_query_default::add_where().
+   */
+  function add_where($group, $field, $value = NULL, $operator = NULL) {
+    // Ensure all variants of 0 are actually 0. Thus '', 0 and NULL are all
+    // the default group.
+    if (empty($group)) {
+      $group = 0;
+    }
+
+    // Check for a group.
+    if (!isset($this->where[$group])) {
+      $this->set_where_group('AND', $group);
+    }
+
+    $this->where[$group]['conditions'][] = array(
+      'field' => $field,
+      'value' => $value,
+      'operator' => $operator,
+    );
+  }
+
+  /**
+   * Support for groupping.
+   *
+   * @see views_plugin_query_default::set_where_group().
+   */
+  function set_where_group($type = 'AND', $group = NULL, $where = 'where') {
+    // Set an alias.
+    $groups = &$this->$where;
+
+    if (!isset($group)) {
+      $group = empty($groups) ? 1 : max(array_keys($groups)) + 1;
+    }
+
+    // Create an empty group
+    if (empty($groups[$group])) {
+      $groups[$group] = array('conditions' => array(), 'args' => array());
+    }
+
+    $groups[$group]['type'] = strtoupper($type);
+    return $group;
   }
 }
