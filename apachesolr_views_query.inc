@@ -48,6 +48,16 @@ class apachesolr_views_query extends views_plugin_query {
   }
 
   /**
+   * Let modules modify the query just prior to finalizing it.
+   */
+  function alter(&$view) {
+    foreach (module_implements('views_query_alter') as $module) {
+      $function = $module . '_views_query_alter';
+      $function($view, $this);
+    }
+  }
+
+  /**
    * Executes the query and fills the associated view object with according
    * values.
    *
