@@ -89,8 +89,17 @@ class apachesolr_views_query extends views_plugin_query {
       }
       $params['fl'] = implode(',', $params['fl']);
 
+      $where = $this->where;
+      //Remove any empty conditions (exposed filters), they will cause an error
+      foreach($where as &$where_condition){
+        foreach($where_condition['conditions'] as $index => $condition){
+          if ($condition['value'] == '') {
+            unset($where_condition['conditions'][$index]);
+          }
+        }
+      }
       // Add conditions to filter parameter.
-      $conditions = array('conditions' => $this->where, 'type' => $this->group_operator);
+      $conditions = array('conditions' => $where, 'type' => $this->group_operator);
       $conditions_string = $this->build_where_string($conditions);
 
       if (!empty($conditions_string)) {
