@@ -113,6 +113,16 @@ function apachesolr_views_views_data() {
         'click sortable' => TRUE,
       ),
     );
+
+    // Score field.
+    $data[$apachesolr_base_table]['score'] = array(
+      'title' => t('Score'),
+      'help' => t('Score'),
+      'field' => array(
+        'handler' => 'apachesolr_views_handler_field',
+        'click sortable' => TRUE,
+      ),
+    );
   }
 
   return $data;
