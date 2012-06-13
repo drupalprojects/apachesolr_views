@@ -14,5 +14,6 @@ files[] = handlers/apachesolr_views_handler_field.inc
 files[] = handlers/apachesolr_views_snippet_handler_field.inc
 files[] = handlers/apachesolr_views_handler_sort.inc
 files[] = handlers/apachesolr_views_handler_filter.inc
+files[] = handlers/apachesolr_views_handler_filter_date.inc
 files[] = handlers/apachesolr_views_keyword_handler_filter.inc
 files[] = handlers/apachesolr_views_handler_argument.inc
