@@ -98,6 +98,16 @@ function apachesolr_views_views_data() {
         'handler' => 'apachesolr_views_keyword_handler_filter',
       ),
     );
+
+    // Snippet field.
+    $data[$apachesolr_base_table]['snippet'] = array(
+      'title' => t('Snippet'),
+      'help' => t('Search snippet'),
+      'field' => array(
+        'handler' => 'apachesolr_views_snippet_handler_field',
+        'click sortable' => TRUE,
+      ),
+    );
   }
 
   return $data;
