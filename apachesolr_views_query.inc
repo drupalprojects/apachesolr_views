@@ -106,6 +106,11 @@ class apachesolr_views_query extends views_plugin_query {
         $params['fq'] = $conditions_string;
       }
 
+      // Set query type if it is present.
+      if (isset($this->params['defType'])) {
+        $params['defType'] = $this->params['defType'];
+      }
+
       // Load search query.
       // Get the Apache Solr "environment id".
       if (strpos($view->base_table, 'apachesolr__') === 0) {
