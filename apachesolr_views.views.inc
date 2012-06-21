@@ -55,10 +55,16 @@ function apachesolr_views_views_data() {
       }
 
       $field_type = $solr_field->type;
-      $filter_handler = 'apachesolr_views_handler_filter';
 
-      if ($field_type == 'tdate') {
-        $filter_handler = 'apachesolr_views_handler_filter_date';
+      $filter_handler = 'apachesolr_views_handler_filter';
+      switch ($field_type) {
+        case 'tdate':
+          $filter_handler = 'apachesolr_views_handler_filter_date';
+          break;
+        case 'text':
+        case 'string':
+          $filter_handler = 'apachesolr_views_handler_filter_string';
+          break;
       }
 
       $data[$apachesolr_base_table][$solr_field_name] = array(
