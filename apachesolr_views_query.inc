@@ -10,6 +10,7 @@ class apachesolr_views_query extends views_plugin_query {
    * Array of parameters for Solr query.
    */
   protected $params;
+  protected $query_params;
 
   /**
    * Array of all encountered errors. Each of these is fatal, meaning that a
@@ -45,6 +46,53 @@ class apachesolr_views_query extends views_plugin_query {
 
     // Add fields to the query so they will be shown in solr document.
     $this->params['fl'] = array_keys($view->field);
+
+    $params = array();
+    if (isset($this->params['q'])) {
+      $params['q'] =  $this->params['q'];
+    }
+
+    $params['rows'] = $this->pager->options['items_per_page'];
+    $params['start'] = $this->pager->current_page * $this->pager->options['items_per_page'];
+
+    // If we display all items without pager.
+    if ($params['rows'] == 0) {
+      $params['rows'] = 100000;
+    }
+
+    // Add fields.
+    $params['fl'] = array('id', 'entity_id');
+    if (isset($this->params['fl'])) {
+      $params['fl'] = array_merge($params['fl'], $this->params['fl']);
+    }
+    $params['fl'] = implode(',', $params['fl']);
+
+    $where = $this->where;
+    //Remove any empty conditions (exposed filters), they will cause an error
+    foreach($where as &$where_condition){
+      foreach($where_condition['conditions'] as $index => $condition){
+        if ($condition['value'] == '') {
+          unset($where_condition['conditions'][$index]);
+        }
+      }
+    }
+    // Add conditions to filter parameter.
+    $conditions = array('conditions' => $where, 'type' => $this->group_operator);
+    $conditions_string = $this->build_where_string($conditions);
+
+    if (!empty($conditions_string)) {
+      $params['fq'] = $conditions_string;
+    }
+
+    // Set query type if it is present.
+    if (isset($this->params['defType'])) {
+      $params['defType'] = $this->params['defType'];
+    }
+
+    $this->query_params = $params;
+
+    // Export parameters for preview.
+    $view->build_info['query'] = var_export($params, TRUE);
   }
 
   /**
@@ -69,47 +117,7 @@ class apachesolr_views_query extends views_plugin_query {
       $start = microtime(TRUE);
 
       // Execute the search.
-      $params = array();
-      if (isset($this->params['q'])) {
-        $params['q'] =  $this->params['q'];
-      }
 
-      $params['rows'] = $this->pager->options['items_per_page'];
-      $params['start'] = $this->pager->current_page * $this->pager->options['items_per_page'];
-
-      // If we display all items without pager.
-      if ($params['rows'] == 0) {
-        $params['rows'] = 100000;
-      }
-
-      // Add fields.
-      $params['fl'] = array('id', 'entity_id');
-      if (isset($this->params['fl'])) {
-        $params['fl'] = array_merge($params['fl'], $this->params['fl']);
-      }
-      $params['fl'] = implode(',', $params['fl']);
-
-      $where = $this->where;
-      //Remove any empty conditions (exposed filters), they will cause an error
-      foreach($where as &$where_condition){
-        foreach($where_condition['conditions'] as $index => $condition){
-          if ($condition['value'] == '') {
-            unset($where_condition['conditions'][$index]);
-          }
-        }
-      }
-      // Add conditions to filter parameter.
-      $conditions = array('conditions' => $where, 'type' => $this->group_operator);
-      $conditions_string = $this->build_where_string($conditions);
-
-      if (!empty($conditions_string)) {
-        $params['fq'] = $conditions_string;
-      }
-
-      // Set query type if it is present.
-      if (isset($this->params['defType'])) {
-        $params['defType'] = $this->params['defType'];
-      }
 
       // Load search query.
       // Get the Apache Solr "environment id".
@@ -121,7 +129,7 @@ class apachesolr_views_query extends views_plugin_query {
       }
 
       $solr = apachesolr_get_solr($env_id);
-      $query = new ApachesolrViewsSolrBaseQuery('apachesolr', $solr, $params, '', current_path());
+      $query = new ApachesolrViewsSolrBaseQuery('apachesolr', $solr, $this->query_params, '', current_path());
 
       // Add sorting.
       if (isset($this->params['sort'])) {
@@ -166,6 +174,24 @@ class apachesolr_views_query extends views_plugin_query {
       return;
     }
   }
+
+//  function build(&$view) {
+    // Make the query distinct if the option was set.
+//    if (!empty($this->options['distinct'])) {
+//      $this->set_distinct();
+//    }
+//
+//    // Store the view in the object to be able to use it later.
+//    $this->view = $view;
+//
+//    $view->init_pager();
+//
+//    // Let the pager modify the query to add limits.
+//    $this->pager->query();
+
+//    $view->build_info['query'] = '$this->query()';
+////    $view->build_info['count_query'] = $this->query(TRUE);
+//  }
 
   public function add_filter($type, $value, $exclude = FALSE) {
     $exclude_string = ($exclude) ? '-' : '';
