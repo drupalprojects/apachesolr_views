@@ -14,5 +14,4 @@ class apachesolr_views_handler_sort extends views_handler_sort {
     $order = strtolower($this->options['order']);
     $this->query->add_sort($this->real_field, $order);
   }
-
 }

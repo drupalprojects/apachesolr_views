@@ -26,43 +26,20 @@ function apachesolr_views_views_plugins() {
  * Implementation of hook_views_data().
  */
 function apachesolr_views_views_data() {
-  foreach (module_invoke_all('apachesolr_entities') as $base_table => $definition) {
-    $name = $definition['name'];
-    $base_field = $definition['base_field'];
-    $apachesolr_base_table = 'apachesolr_' . $base_table;
-    $data[$apachesolr_base_table]['table']['group'] = t('Apache Solr');
+  foreach (apachesolr_load_all_environments() as $env_id => $environment) {
+    $name = $environment['name'];
+    $apachesolr_base_table = 'apachesolr__' . $env_id;
 
+    $data[$apachesolr_base_table]['table']['group'] = t('Apache Solr');
     $data[$apachesolr_base_table]['table']['base'] = array(
       'query class' => 'apachesolr_views_query',
       'title' => t('Apache Solr @name', array('@name' => $name)),
       'help' => t('Searches the site with the Apache Solr search engine for @name', array('@name' => $name)),
-      'field' => $base_field,
-      'entity type' => 'node',
     );
 
-//    $data[$apachesolr_base_table]['text'] = array(
-//      'title' => t('Search'),
-//      'help' => t('Searches the content with Solr'),
-//      'filter' => array(
-//        'handler' => 'apachesolr_views_handler_filter_search',
-//      ),
-//    );
-
-//    $data[$apachesolr_base_table]['nid'] = array(
-//      'title' => t('Nid'),
-//      'help' => t('The node ID of the node.'),
-//      'field' => array(
-//        'handler' => 'views_handler_field_node',
-//        'click sortable' => TRUE,
-//      ),
-//      'sort' => array(
-//        'handler' => 'apachesolr_views_handler_sort',
-//      ),
-//    );
-
-    // Get the list of the fields in idex directly from Solr.
+    // Get the list of the fields in index directly from Solr.
     try {
-      $solr = apachesolr_get_solr();
+      $solr = apachesolr_get_solr($env_id);
       $solr_fields = $solr->getFields(1);
     }
     catch (Exception $e) {
@@ -78,32 +55,74 @@ function apachesolr_views_views_data() {
       }
 
       $field_type = $solr_field->type;
+      $filter_handler = 'apachesolr_views_handler_filter';
 
-      $field_names = apachesolr_views_field_names($solr_field_name);
+      if ($field_type == 'tdate') {
+        $filter_handler = 'apachesolr_views_handler_filter_date';
+      }
 
       $data[$apachesolr_base_table][$solr_field_name] = array(
-        'title' => t($field_names['title']),
-        'help' => t($field_names['help']),
+        'title' => $solr_field_name,
+        'help' => $solr_field_name,
         'field' => array(
           'handler' => 'apachesolr_views_handler_field',
           'click sortable' => TRUE,
         ),
-        // Information for accepting a nid as an argument
-//        'argument' => array(
-//          'handler' => 'views_handler_argument_node_nid',
-//          'name field' => 'title', // the field to display in the summary.
-//          'numeric' => TRUE,
-//          'validate type' => 'nid',
-//        ),
         'filter' => array(
-          'handler' => 'apachesolr_views_handler_filter',
+          'handler' => $filter_handler,
         ),
         'sort' => array(
           'handler' => 'apachesolr_views_handler_sort',
         ),
+        'argument' => array(
+          'handler' => 'apachesolr_views_handler_argument',
+        ),
       );
+
+      // Default sort field for label.
+      $sort_field_name = ($solr_field_name == 'label') ? 'sort_label' : '';
+      // Check if corresponding sort_ field exists. We remove prefix from field
+      // name (for example prefix "ss_" from "ss_name") and check if "sort_*"
+      // field is available.
+      if (array_key_exists('sort_' . substr($solr_field_name, 2), $solr_fields)) {
+        $sort_field_name = 'sort_' . substr($solr_field_name, 2);
+      }
+      if (!empty($sort_field_name)) {
+        // Use the sort field for click sorting.
+        $data[$apachesolr_base_table][$solr_field_name]['field']['click sort field'] = $sort_field_name;
+        // And use the sort field for explicit sorts.
+        $data[$apachesolr_base_table][$solr_field_name]['sort']['real field'] = $sort_field_name;
+      }
     }
 
+    // Keyword field.
+    $data[$apachesolr_base_table]['keyword'] = array(
+      'title' => t('Search'),
+      'help' => t('Fulltext search'),
+      'filter' => array(
+        'handler' => 'apachesolr_views_keyword_handler_filter',
+      ),
+    );
+
+    // Snippet field.
+    $data[$apachesolr_base_table]['snippet'] = array(
+      'title' => t('Snippet'),
+      'help' => t('Search snippet'),
+      'field' => array(
+        'handler' => 'apachesolr_views_snippet_handler_field',
+        'click sortable' => TRUE,
+      ),
+    );
+
+    // Score field.
+    $data[$apachesolr_base_table]['score'] = array(
+      'title' => t('Score'),
+      'help' => t('Score'),
+      'field' => array(
+        'handler' => 'apachesolr_views_handler_field',
+        'click sortable' => TRUE,
+      ),
+    );
   }
 
   return $data;

@@ -2,20 +2,28 @@
 
 class apachesolr_views_handler_filter extends views_handler_filter {
   function query() {
-    if (!empty($this->value)) {
-      $value = $this->value;
-      $fieldname = $this->field;
-
-      if (is_array($value)) {
-        $values = array_filter($value);
-        // Ensure that some values have been selected.
-        if (!empty($values)) {
-          $this->query->add_filter($fieldname, '(' . implode('OR', $values) . ')');
-        }
-        return;
-      }
-      $this->query->add_filter($fieldname, $value);
+    // Trim both array or scalar value.
+    if (is_array($this->value)) {
+      array_walk($this->value, 'apachesolr_views_handler_filter::trim');
+      $this->value = array_filter($this->value);
     }
+    else {
+      $this->value = trim($this->value);
+    }
+
+    if (!empty($this->value)) {
+      if (is_array($this->value)) {
+        $this->value = implode(' OR ', $this->value);
+      }
+      $this->query->add_where($this->options['group'], "$this->real_field", $this->value, $this->operator);
+    }
+  }
+
+  /**
+   * Trim value.
+   */
+  function trim(&$value) {
+    $value = trim($value);
   }
 
   /**

@@ -1,7 +1,5 @@
 <?php
 
-// TODO: Spellchecker field? What todo about spellchecker...
-
 /**
  * Class for handling a view that gets its data not from the database, but from
  * a Solr server.
@@ -22,14 +20,16 @@ class apachesolr_views_query extends views_plugin_query {
   protected $errors;
 
   /**
-   * The names of all fields whose value is required by a handler. The format
-   * follows the same as Search API field identifiers (parent:child).
-   *
-   * @var array
+   * Store results of apachesolr search.
    */
-  protected $fields;
-
   protected $apachesolr_results;
+
+  /**
+   * Array of where conditions.
+   *
+   * Neede for grouppin of query conditions.
+   */
+  protected $where = array();
 
   public function build(&$view) {
     $view->init_pager();
@@ -45,6 +45,16 @@ class apachesolr_views_query extends views_plugin_query {
 
     // Add fields to the query so they will be shown in solr document.
     $this->params['fl'] = array_keys($view->field);
+  }
+
+  /**
+   * Let modules modify the query just prior to finalizing it.
+   */
+  function alter(&$view) {
+    foreach (module_implements('views_query_alter') as $module) {
+      $function = $module . '_views_query_alter';
+      $function($view, $this);
+    }
   }
 
   /**
@@ -73,43 +83,58 @@ class apachesolr_views_query extends views_plugin_query {
       }
 
       // Add fields.
+      $params['fl'] = array('id', 'entity_id');
       if (isset($this->params['fl'])) {
-        $params['fl'] = implode(',', $this->params['fl']);
+        $params['fl'] = array_merge($params['fl'], $this->params['fl']);
+      }
+      $params['fl'] = implode(',', $params['fl']);
+
+      $where = $this->where;
+      //Remove any empty conditions (exposed filters), they will cause an error
+      foreach($where as &$where_condition){
+        foreach($where_condition['conditions'] as $index => $condition){
+          if ($condition['value'] == '') {
+            unset($where_condition['conditions'][$index]);
+          }
+        }
+      }
+      // Add conditions to filter parameter.
+      $conditions = array('conditions' => $where, 'type' => $this->group_operator);
+      $conditions_string = $this->build_where_string($conditions);
+
+      if (!empty($conditions_string)) {
+        $params['fq'] = $conditions_string;
       }
 
-      // Add filters to parameters.
-      if (isset($this->params['filters'])) {
-        $params['fq'] = $this->params['filters'];
+      // Load search query.
+      // Get the Apache Solr "environment id".
+      if (strpos($view->base_table, 'apachesolr__') === 0) {
+        $env_id = substr($view->base_table, 12);
       }
+      else {
+        $env_id = apachesolr_default_environment();
+      }
+
+      $solr = apachesolr_get_solr($env_id);
+      $query = new ApachesolrViewsSolrBaseQuery('apachesolr', $solr, $params, '', current_path());
 
       // Add sorting.
-      $solrsort = '';
       if (isset($this->params['sort'])) {
-        $solrsort = implode(', ', $this->params['sort']);
+        $query->setAvailableSort($this->params['sort'][0], $this->params['sort'][1]);
+        $query->setSolrsort($this->params['sort'][0], $this->params['sort'][1]);
       }
 
-      // Load search query and execute it.
-      $solr = apachesolr_get_solr();
-      $query = new SolrBaseQuery('apachesolr', $solr, $params, $solrsort, '');
-
-      $params = array(
-        'fl' => array('id', 'entity_id', 'entity_type', 'bundle', 'bundle_name', 'label', 'is_comment_count', 'ds_created', 'ds_changed', 'score', 'path', 'url', 'is_uid', 'tos_name'),
-      );
-      if ($query) {
-        $query->addParams($params);
-      }
-
-      apachesolr_search_add_boost_params($query);
       $query->page = $this->pager->current_page;
+
+      // Boost parameters if apachesolr_search module is available.
+      apachesolr_search_add_boost_params($query);
+
+      // Execute search.
       list($final_query, $response) = apachesolr_do_query($query);
       apachesolr_has_searched($solr->getId(), TRUE);
 
-      // This is needed for removing errors in standard field handler.
-      // When we move to our custom field handlers this won't be needed.
-      // @see views_handler_field_field.inc line 600.
-      foreach (apachesolr_search_process_response($response, $final_query) as $result_item) {
-        $view->result[] = (object) $result_item;
-      }
+      // Store results.
+      $view->result = $response->response->docs;
 
       // Store apachesolr cached response.
       $this->apachesolr_response = $response;
@@ -117,7 +142,6 @@ class apachesolr_views_query extends views_plugin_query {
       // Store the results.
       $this->pager->total_items = $view->total_rows = $this->apachesolr_response->response->numFound;
       $this->pager->update_page_info();
-
 
       // We shouldn't use $results['performance']['complete'] here, since
       // extracting the results probably takes considerable time as well.
@@ -140,7 +164,7 @@ class apachesolr_views_query extends views_plugin_query {
 
   public function add_filter($type, $value, $exclude = FALSE) {
     $exclude_string = ($exclude) ? '-' : '';
-    $this->params['filters'][] = $exclude_string . $type . ':' . $value;
+    $this->params['filters'][] = $exclude_string . $type . ':(' . $value . ')';
   }
 
   public function add_filter_string($string) {
@@ -148,7 +172,7 @@ class apachesolr_views_query extends views_plugin_query {
   }
 
   public function add_sort($field, $order) {
-    $this->params['sort'][] = $field . ' ' . $order;
+    $this->params['sort'] = array($field, $order);
   }
 
   public function add_parameter($key, $value) {
@@ -161,19 +185,70 @@ class apachesolr_views_query extends views_plugin_query {
     }
   }
 
-  public function ensure_table($table, $relationship) {
-    if ($table == 'node') {
-      return drupal_map_assoc(
-        array('title', 'type',
-            'path', 'path_alias', 'uid', 'name', 'created', 'changed',
-            'last_comment_or_change', 'nid', 'status', 'promote', 'moderate',
-            'sticky', 'tnid', 'translate', 'language', 'comment_count', 'tid',
-            'vid', 'timestamp'
-        ));
+  public function get_params() {
+    return $this->params;
+  }
+
+  /**
+   *  Build filter string from where array.
+   */
+  function build_where_string($where) {
+    if (!isset($where['conditions'])) {
+      return $where['field'] . ':(' . $where['value'] . ')';
+    }
+    else {
+      $condition_strings = array();
+      foreach ($where['conditions'] as $condition) {
+        $condition_strings[] = $this->build_where_string($condition);
+      }
+      $condition_strings = array_filter($condition_strings);
+      return implode(' ' . $where['type'] . ' ', $condition_strings);
     }
   }
 
-  public function get_params() {
-    return $this->params;
+  /**
+   * Support for groupping.
+   *
+   * @see views_plugin_query_default::add_where().
+   */
+  function add_where($group, $field, $value = NULL, $operator = NULL) {
+    // Ensure all variants of 0 are actually 0. Thus '', 0 and NULL are all
+    // the default group.
+    if (empty($group)) {
+      $group = 0;
+    }
+
+    // Check for a group.
+    if (!isset($this->where[$group])) {
+      $this->set_where_group('AND', $group);
+    }
+
+    $this->where[$group]['conditions'][] = array(
+      'field' => $field,
+      'value' => $value,
+      'operator' => $operator,
+    );
+  }
+
+  /**
+   * Support for groupping.
+   *
+   * @see views_plugin_query_default::set_where_group().
+   */
+  function set_where_group($type = 'AND', $group = NULL, $where = 'where') {
+    // Set an alias.
+    $groups = &$this->$where;
+
+    if (!isset($group)) {
+      $group = empty($groups) ? 1 : max(array_keys($groups)) + 1;
+    }
+
+    // Create an empty group
+    if (empty($groups[$group])) {
+      $groups[$group] = array('conditions' => array(), 'args' => array());
+    }
+
+    $groups[$group]['type'] = strtoupper($type);
+    return $group;
   }
 }
