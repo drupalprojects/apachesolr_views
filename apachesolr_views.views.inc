@@ -40,7 +40,7 @@ function apachesolr_views_views_data() {
     // Get the list of the fields in index directly from Solr.
     try {
       $solr = apachesolr_get_solr($env_id);
-      $solr_fields = $solr->getFields(1);
+      $solr_fields = $solr->getFields(0);
     }
     catch (Exception $e) {
       $solr_fields = array();
