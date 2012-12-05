@@ -15,7 +15,6 @@ class apachesolr_views_handler_argument_node_type extends apachesolr_views_handl
       return t('Unknown node type');
     }
     else {
-      $output .= 's';
       return check_plain(t($output));
     }
   }
