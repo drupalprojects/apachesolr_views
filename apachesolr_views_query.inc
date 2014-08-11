@@ -289,4 +289,10 @@ class apachesolr_views_query extends views_plugin_query {
     $groups[$group]['type'] = strtoupper($type);
     return $group;
   }
+
+  /**
+   * Implement ensure_table, do nothing.
+   */
+  function ensure_table($table, $relationship = NULL, $join = NULL) {
+  }
 }
