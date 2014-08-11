@@ -10,10 +10,10 @@ class apachesolr_views_handler_field extends views_handler_field {
     $alias = isset($field) ? $this->aliases[$field] : $this->field_alias;
     if (isset($values->{$alias})) {
       if (is_array($values->{$alias})) {
-        return implode(" ", $values->{$alias});
+        return decode_entities(implode(" ", $values->{$alias}));
       }
       else {
-        return $values->{$alias};
+        return decode_entities($values->{$alias});
       }
     }
   }
