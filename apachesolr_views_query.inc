@@ -11,6 +11,7 @@ class apachesolr_views_query extends views_plugin_query {
    */
   protected $params;
   protected $query_params;
+  public $orderby = array();
 
   /**
    * Array of all encountered errors. Each of these is fatal, meaning that a
@@ -138,11 +139,8 @@ class apachesolr_views_query extends views_plugin_query {
       $solr = apachesolr_get_solr($env_id);
       $query = new ApachesolrViewsSolrBaseQuery('apachesolr', $solr, $this->query_params, '', current_path());
 
-      // Add sorting.
-      if (isset($this->params['sort'])) {
-        $query->setAvailableSort($this->params['sort'][0], $this->params['sort'][1]);
-        $query->setSolrsort($this->params['sort'][0], $this->params['sort'][1]);
-      }
+      // Add sorting. The setSolrsort method can't be used, because it doesn't support multiple sorting criteria.
+      $query->replaceParam('sort', $this->orderby);
 
       $query->page = $this->pager->current_page;
 
@@ -210,7 +208,7 @@ class apachesolr_views_query extends views_plugin_query {
   }
 
   public function add_sort($field, $order) {
-    $this->params['sort'] = array($field, $order);
+    $this->orderby[] = "$field $order";
   }
 
   public function add_parameter($key, $value) {
