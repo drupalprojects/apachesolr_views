@@ -14,7 +14,7 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
 
   //@TODO: refactor switch
   function op_simple($field) {
-    $value = intval(strtotime($this->value['value'], 0));
+    $value = intval(strtotime($this->value['value']));
     $value = new DateObject($value);
 
     // Probably there is a better way with dateobject, but no way to find how.
@@ -126,7 +126,7 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
     if ($date_str!='' && !strpos($date_str, ':')) {
       $date_str = $date_str . " " . $round_string;
     }
-    $time = intval(strtotime($date_str, 0));
+    $time = intval(strtotime($date_str));
     if ($time != 0) {
       $date = new DateObject($time);
       $date_formatted = $date->format(FACETAPI_DATE_ISO8601);
