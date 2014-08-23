@@ -5,6 +5,9 @@
  * Date filter handler for Apache Solr Views.
  */
 
+// Date format used by Solr.
+define('APACHESOLR_VIEWS_DATE_ISO8601', 'Y-m-d\TH:i:s\Z');
+
 class apachesolr_views_handler_filter_date extends views_handler_filter_date {
 
   /**
@@ -28,7 +31,7 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
     // Probably there is a better way with dateobject, but no way to find how.
     $has_time = strpos($this->value['value'], ':');
 
-    $value_format = $value->format(FACETAPI_DATE_ISO8601);
+    $value_format = $value->format(APACHESOLR_VIEWS_DATE_ISO8601);
     switch ($this->operator) {
       case '<':
       case '<=':
@@ -144,7 +147,7 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
     $time = intval(strtotime($date_str));
     if ($time != 0) {
       $date = new DateObject($time);
-      $date_formatted = $date->format(FACETAPI_DATE_ISO8601);
+      $date_formatted = $date->format(APACHESOLR_VIEWS_DATE_ISO8601);
     }
     else {
       $date_formatted = '*';
