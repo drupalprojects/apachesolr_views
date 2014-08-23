@@ -1,19 +1,27 @@
 <?php
 
+/**
+ * @file
+ * Date filter handler for Apache Solr Views.
+ */
+
 class apachesolr_views_handler_filter_date extends views_handler_filter_date {
-  function op_between($field) {
-    $value_a_formatted = $this->obtain_formated_date($this->value['min'], '00:00:00');
-    $value_b_formatted = $this->obtain_formated_date($this->value['max'], '23:59:59.999');
+
+  /**
+   * Filter for a date within certain range.
+   */
+  public function op_between($field) {
+    $min_value = $this->obtain_formated_date($this->value['min'], '00:00:00');
+    $max_value = $this->obtain_formated_date($this->value['max'], '23:59:59.999');
+    $value = "[$min_value TO $max_value]";
     $operator = strtoupper($this->operator);
-    $this->query->add_where($this->options['group'],
-                            "$this->real_field",
-                            '[' . $value_a_formatted . ' TO ' . $value_b_formatted . ']',
-                            $operator);
+    $this->query->add_where($this->options['group'], $this->real_field, $value, $operator);
   }
 
-
-  //@TODO: refactor switch
-  function op_simple($field) {
+  /**
+   * Add the date filter to the query parameters.
+   */
+  public function op_simple($field) {
     $value = intval(strtotime($this->value['value']));
     $value = new DateObject($value);
 
@@ -31,6 +39,7 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
           $value = '[* TO ' . $value_format . '/DAY+1DAY]';
         }
         break;
+
       case '>':
       case '>=':
         if ($has_time) {
@@ -40,6 +49,7 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
           $value = '[' . $value_format . '/DAY TO *]';
         }
         break;
+
       case '!=':
         if ($has_time) {
           $value = '[* TO ' . $value_format . '-1SECOND] OR [' . $value_format . '+1SECOND TO *]';
@@ -48,6 +58,7 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
           $value = '[* TO ' . $value_format . '/DAY-1DAY] OR [' . $value_format . '/DAY+1DAY TO *]';
         }
         break;
+
       case '=':
       default:
         if ($has_time) {
@@ -58,33 +69,31 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
         }
         break;
     }
-    $this->query->add_where($this->options['group'], "$this->real_field", $value, $this->operator);
+    $this->query->add_where($this->options['group'], $this->real_field, $value, $this->operator);
   }
 
   /**
-   * Add a type selector to the value form
+   * Add a type selector to the value form.
    */
-  function value_form(&$form, &$form_state) {
+  public function value_form(&$form, &$form_state) {
     parent::value_form($form, $form_state);
-    unset($form['value']['type']);  //Remove offset functionality.
+    // Remove offset functionality.
+    unset($form['value']['type']);
 
     // Add class to identify in jquery input fields and add jquery.ui.datepicker
     if (isset($form['value']['min'])) {
-      $form['value']['max']['#attributes']['class'][] = "views_input_date";
-      $form['value']['min']['#attributes']['class'][] = "views_input_date";
+      $form['value']['max']['#attributes']['class'][] = 'views_input_date';
+      $form['value']['min']['#attributes']['class'][] = 'views_input_date';
     }
     else {
-      $form['value']['value']['#attributes']['class'][] = "views_input_date";
+      $form['value']['value']['#attributes']['class'][] = 'views_input_date';
     }
   }
 
   /**
-   * Overload to allow ranges without end-date, asume * if not present.
-   *
-   * @param $input
-   * @return bool
+   * Override to allow ranges without end-date, assume * if not present.
    */
-  function accept_exposed_input($input) {
+  public function accept_exposed_input($input) {
     if (empty($this->options['exposed'])) {
       return TRUE;
     }
@@ -102,7 +111,8 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
     }
 
     if ($operators[$operator]['values'] != 1) {
-      if ($this->value['min'] == '' && $this->value['max'] == '') {  //this is the line overrided
+      // This is the line overridden.
+      if ($this->value['min'] == '' && $this->value['max'] == '') {
         return FALSE;
       }
       else {
@@ -110,21 +120,26 @@ class apachesolr_views_handler_filter_date extends views_handler_filter_date {
       }
     }
 
-    // restore what got overwritten by the parent.
+    // Restore what got overwritten by the parent.
     $this->value['type'] = $type;
     return $rc;
   }
 
   /**
-   * obtains a formated data for SOLR
-   * @param $date_str date in string format
-   * @param $round_string string to add if no time is present
-   * @return string the date formated for SOLR
+   * Obtains a formated data for SOLR.
+   *
+   * @param string $date_str
+   *   Date in string format.
+   * @param string $round_string
+   *   String to add if no time is present.
+   *
+   * @return string
+   *   The date formated for SOLR.
    */
-  function obtain_formated_date($date_str, $round_string = "00:00:00") {
-    //probably there is a better way with dateobject, but no way to find how
-    if ($date_str!='' && !strpos($date_str, ':')) {
-      $date_str = $date_str . " " . $round_string;
+  public function obtain_formated_date($date_str, $round_string = '00:00:00') {
+    // Guess if we time part to the date and if not, add the round string.
+    if ($date_str != '' && !strpos($date_str, ':')) {
+      $date_str .= ' ' . $round_string;
     }
     $time = intval(strtotime($date_str));
     if ($time != 0) {
