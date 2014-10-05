@@ -51,12 +51,6 @@ class apachesolr_views_query extends views_plugin_query {
     // Let the pager modify the query to add limits.
     $this->pager->query();
 
-    // Set aliases of the fields.
-    foreach ($view->field as $field_name => &$field) {
-      $field->field_alias = $field_name;
-      $field->aliases['entity_type'] = 'entity_type';
-    }
-
     // Add fields to the query so they will be shown in solr document.
     $this->params['fl'] = array_keys($view->field);
 
@@ -220,9 +214,9 @@ class apachesolr_views_query extends views_plugin_query {
   }
 
   public function add_field($table_alias, $field, $alias = '', $params = array()) {
-    if (isset($table_alias[$field])) {
-      return $table_alias[$field];
-    }
+    // Make sure an alias is assigned.
+    $alias = $alias ? $alias : $field;
+    return $alias;
   }
 
   public function get_params() {
