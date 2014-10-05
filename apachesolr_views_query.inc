@@ -239,9 +239,11 @@ class apachesolr_views_query extends views_plugin_query {
     else {
       $condition_strings = array();
       foreach ($where['conditions'] as $condition) {
-        $condition_strings[] = $this->build_where_string($condition);
+        if ($condition = $this->build_where_string($condition)) {
+          // Wrap each condition in parenthesis.
+          $condition_strings[] = "($condition)";
+        }
       }
-      $condition_strings = array_filter($condition_strings);
       return implode(' ' . $where['type'] . ' ', $condition_strings);
     }
   }
