@@ -16,14 +16,6 @@ class apachesolr_views_query extends views_plugin_query {
   public $orderby = array();
 
   /**
-   * Array of all encountered errors. Each of these is fatal, meaning that a
-   * non-empty $errors property will result in an empty result being returned.
-   *
-   * @var array
-   */
-  protected $errors;
-
-  /**
    * Store results of apachesolr search.
    */
   protected $apachesolr_results;
@@ -158,43 +150,20 @@ class apachesolr_views_query extends views_plugin_query {
       // Store the results.
       $this->pager->total_items = $view->total_rows = $this->apachesolr_response->response->numFound;
       $this->pager->update_page_info();
-
-      // We shouldn't use $results['performance']['complete'] here, since
-      // extracting the results probably takes considerable time as well.
-      $view->execute_time = microtime(TRUE) - $start;
     }
     catch (Exception $e) {
-      $this->errors[] = $e->getMessage();
-    }
-
-    if ($this->errors) {
-      foreach ($this->errors as $msg) {
-        drupal_set_message($msg, 'error');
-      }
       $view->result = array();
       $view->total_rows = 0;
-      $view->execute_time = 0;
-      return;
+      if (!empty($view->live_preview)) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
+      else {
+        vpr('Exception in @human_name[@view_name]: @message', array('@human_name' => $view->human_name, '@view_name' => $view->name, '@message' => $e->getMessage()));
+      }
     }
+
+    $view->execute_time = microtime(TRUE) - $start;
   }
-
-//  function build(&$view) {
-    // Make the query distinct if the option was set.
-//    if (!empty($this->options['distinct'])) {
-//      $this->set_distinct();
-//    }
-//
-//    // Store the view in the object to be able to use it later.
-//    $this->view = $view;
-//
-//    $view->init_pager();
-//
-//    // Let the pager modify the query to add limits.
-//    $this->pager->query();
-
-//    $view->build_info['query'] = '$this->query()';
-////    $view->build_info['count_query'] = $this->query(TRUE);
-//  }
 
   public function add_filter($type, $value, $exclude = FALSE) {
     $exclude_string = ($exclude) ? '-' : '';
