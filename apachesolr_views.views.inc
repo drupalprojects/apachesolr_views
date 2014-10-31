@@ -73,7 +73,7 @@ function apachesolr_views_views_data() {
 
       $data[$apachesolr_base_table][$solr_field_name] = array(
         'title' => $solr_field_name,
-        'help' => $solr_field_name,
+        'help' => filter_xss(apachesolr_field_name_map($solr_field_name)),
         'field' => array(
           'handler' => $field_handler,
           'click sortable' => TRUE,
