@@ -202,12 +202,15 @@ class apachesolr_views_query extends views_plugin_query {
     else {
       $condition_strings = array();
       foreach ($where['conditions'] as $condition) {
-        if ($condition = $this->build_where_string($condition)) {
-          // Wrap each condition in parenthesis.
-          $condition_strings[] = "($condition)";
-        }
+        $condition_strings[] = $this->build_where_string($condition);
       }
-      return implode(' ' . $where['type'] . ' ', $condition_strings);
+      $condition_strings = array_filter($condition_strings);
+      $condition_string = implode(' ' . $where['type'] . ' ', $condition_strings);
+      // Respect grouping by wrapping multiple conditions with parenthesis.
+      if (count($condition_strings) > 1) {
+        $condition_string = '(' . $condition_string . ')';
+      }
+      return $condition_string;
     }
   }
 
