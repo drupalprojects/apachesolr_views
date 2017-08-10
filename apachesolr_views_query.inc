@@ -65,6 +65,15 @@ class apachesolr_views_query extends views_plugin_query {
       $params['fl'] = array_merge($params['fl'], $this->params['fl']);
     }
     $params['fl'] = implode(',', $params['fl']);
+    if (isset($this->params['hl'])) {
+      $params['hl'] = $this->params['hl'];
+    }
+    if (isset($this->params['hl'])) {
+      $params['f.content.hl.alternateField'] = $this->params['f.content.hl.alternateField'];
+    }
+    if (isset($this->params['hl.snippets'])) {
+      $params['hl.snippets'] = $this->params['hl.snippets'];
+    }
 
     $where = $this->where;
     // Remove any empty conditions (exposed filters), they will cause an error.
